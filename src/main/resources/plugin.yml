@@ -1,0 +1,25 @@
+name: MoonSalary
+version: '${project.version}'
+main: com.ney.moonsalary.MoonSalary
+api-version: 1.16
+author: Ney
+description: Salary for donation groups with AFK protection
+depend: [Vault]
+softdepend: [PlaceholderAPI]
+
+commands:
+  salary:
+    description: Main command of the MoonSalary plugin
+    usage: /<command> [info|reload|list] [player]
+    aliases: [msalary, zp]
+
+permissions:
+  moon_salary.admin.reload:
+    description: Allows to reload the plugin configuration
+    default: op
+  moon_salary.admin.list:
+    description: Allows to view all configured salary groups
+    default: op
+  moon_salary.bypass.afk:
+    description: Allows to receive a salary while being AFK
+    default: false

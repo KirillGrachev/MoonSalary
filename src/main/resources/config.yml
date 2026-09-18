@@ -1,0 +1,186 @@
+settings:
+  enabled: true # Full on/off switch of the plugin
+  interval: 3600 # Salary payout interval (in seconds)
+  execute_commands: true # Execute the commands of the salary group
+  format_money: false # Format {money} through the economy plugin (Vault), otherwise - a plain number
+  title:
+    enabled: true # Show the title on payout
+    fade_in: 20
+    stay: 70
+    fade_out: 20
+
+  afk:
+    enabled: true # AFK protection
+    check_interval: 20 # How often the player position is checked (in seconds)
+    threshold: 300 # How long the player has to stand still to become AFK (in seconds)
+    ignore_rotation: true # Do not treat head rotation as movement
+    notify:
+      enabled: true # Send a message when the player becomes AFK
+      repeat: true # Remind about AFK on every payout attempt
+      title: false # Also show the AFK message as a title
+
+  permissions:
+    enabled: true # Enable permission system (bypass.afk, admin.reload, admin.list)
+    prefix: "group." # Prefix of the group permission (LuckPerms: group.vip)
+    bypass_afk: "moon_salary.bypass.afk"
+    reload: "moon_salary.admin.reload"
+    list: "moon_salary.admin.list"
+
+  sounds:
+    afk:
+      enabled: true
+      sound: ITEM_CROSSBOW_SHOOT
+      volume: 0.7
+      pitch: 1.0
+    salary:
+      enabled: true
+      sound: BLOCK_WOODEN_BUTTON_CLICK_ON
+      volume: 0.6
+      pitch: 1.0
+
+messages:
+  prefix: "&b&lM&9&lL &7» &f"
+
+  on_salary:
+    enabled: true # Group messages (see groups.<name>.messages)
+    title: "&6Salary"
+    subtitle: "&fYou received &e{money} ⛂"
+
+  on_afk:
+    enabled: true
+    text: "&cYou cannot receive a salary while standing still!"
+
+  command:
+    no_permission: "&cYou don't have permission to do that."
+    usage: "&7Usage: &e/salary &7[info|reload|list] [player]"
+    unknown_player: "&cPlayer &e{player} &cnot found."
+    reload_success: "&aConfiguration reloaded successfully!"
+
+    info:
+      self:
+        - ""
+        - " &6╔ &fYour salary"
+        - " &6╠ &fGroup: &e{group}"
+        - " &6╠ &fAmount: &e{money} ⛂"
+        - " &6╠ &fInterval: &e{interval} sec."
+        - " &6╠ &fStatus: {status}"
+        - " &6╚ &fCommands: &e{commands}"
+        - ""
+      other:
+        - ""
+        - " &6╔ &fSalary of &e{player}"
+        - " &6╠ &fGroup: &e{group}"
+        - " &6╠ &fAmount: &e{money} ⛂"
+        - " &6╠ &fStatus: {status}"
+        - " &6╚ &fCommands: &e{commands}"
+        - ""
+
+    list:
+      header: "&7Salary groups (&e{count}&7):"
+      entry: " &6▪ &e{group} &7- &f{money} ⛂ &8(priority: {priority})"
+      empty: "&cNo groups configured."
+
+    status:
+      online: "&aonline"
+      afk: "&cAFK"
+      offline: "&8offline"
+      no_group: "&cgroup not found"
+
+# Placeholders: {money}, {player}, {group}, {interval}, {status}, {commands}
+# HEX colors are supported: #42fffc text
+groups: # Group name = permission (prefix + name), for example: group.vip
+
+  default: # Base group - salary for everyone
+    salary: 100
+    priority: 0
+    messages:
+      - ''
+      - '&f&6╔ &fThe salary hour has come!'
+      - '&f&6╚ &fYou received &e{money} ⛂'
+      - ''
+      - '  &e⌛ %servertime_HH:mm% %servertime_dd/MM/yy%'
+      - ''
+
+  vip: # Example of a donation group
+    salary: 250
+    priority: 1
+    messages:
+      - ''
+      - '&f&6╔ &fThe salary hour has come!'
+      - '&f&6╚ &fYou received &e{money} ⛂'
+      - ''
+      - '  &e⌛ %servertime_HH:mm% %servertime_dd/MM/yy%'
+      - ''
+
+  premium:
+    salary: 400
+    priority: 2
+    messages:
+      - ''
+      - '&f&6╔ &fThe salary hour has come!'
+      - '&f&6╚ &fYou received &e{money} ⛂'
+      - ''
+      - '  &e⌛ %servertime_HH:mm% %servertime_dd/MM/yy%'
+      - ''
+
+  legend:
+    salary: 600
+    priority: 3
+    messages:
+      - ''
+      - '&f&6╔ &fThe salary hour has come!'
+      - '&f&6╚ &fYou received &e{money} ⛂'
+      - ''
+      - '  &e⌛ %servertime_HH:mm% %servertime_dd/MM/yy%'
+      - ''
+
+  media: # Group with an extra command on payout
+    salary: 500
+    priority: 4
+    commands: # Console commands, placeholders: {player}, {money}, {group}
+      - 'give {player} diamond 5'
+    messages:
+      - ''
+      - '&f&6╔ &fThe salary hour has come!'
+      - '&f&6╚ &fYou received &e{money} ⛂'
+      - ''
+      - '  &e⌛ %servertime_HH:mm% %servertime_dd/MM/yy%'
+      - ''
+
+  helper: # Staff group
+    salary: 700
+    priority: 5
+    messages:
+      - ''
+      - '&f&6╔ &fThe salary hour has come!'
+      - '&f&6╚ &fYou received &e{money} ⛂'
+      - ''
+      - '  &e⌛ %servertime_HH:mm% %servertime_dd/MM/yy%'
+      - ''
+
+  moderator: # Several commands at once
+    salary: 800
+    priority: 6
+    commands:
+      - 'give {player} golden_apple 3'
+      - 'minecraft:xp add {player} 100 points'
+    messages:
+      - ''
+      - '&f&6╔ &fThe salary hour has come!'
+      - '&f&6╚ &fYou received &e{money} ⛂'
+      - ''
+      - '  &e⌛ %servertime_HH:mm% %servertime_dd/MM/yy%'
+      - ''
+
+  admin: # The highest priority - wins if the player has several groups
+    salary: 1000
+    priority: 7
+    commands:
+      - 'give {player} netherite_ingot 1'
+    messages:
+      - ''
+      - '&f&6╔ &fThe salary hour has come!'
+      - '&f&6╚ &fYou received &e{money} ⛂'
+      - ''
+      - '  &e⌛ %servertime_HH:mm% %servertime_dd/MM/yy%'
+      - ''
