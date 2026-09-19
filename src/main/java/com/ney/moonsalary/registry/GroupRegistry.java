@@ -65,7 +65,27 @@ public class GroupRegistry {
                 .map(PermissionAttachmentInfo::getPermission)
                 .toList();
 
-        return resolveGroup(permissions, configManager.getGroupPermissionPrefix());
+        SalaryGroup group = resolveGroup(permissions, configManager.getGroupPermissionPrefix());
+
+        return group != null ? group : getFallbackGroup();
+
+    }
+
+    /**
+     * Возвращает fallback-группу для игроков без групповых прав
+     * (например, когда permission-плагин не установлен).
+     *
+     * @return fallback-группа или null если fallback выключен
+     */
+    private @Nullable SalaryGroup getFallbackGroup() {
+
+        String fallbackName = configManager.getFallbackGroup();
+
+        if (fallbackName.isEmpty()) {
+            return null;
+        }
+
+        return getGroup(fallbackName);
 
     }
 

@@ -4,6 +4,8 @@ settings:
     mode: GLOBAL # GLOBAL - payday: everyone is paid at the same time, every interval
     # PERSONAL - personal timer: the countdown starts when the player joins
     interval: 3600 # Time between payouts (in seconds)
+    fallback_group: default # Group paid when the player has no group.<name> permission at all
+    # (no permission plugin installed, fresh player, etc.). Empty string = no fallback
   execute_commands: true # Execute the commands of the salary group
   format_money: false # Format {money} through the economy plugin (Vault), otherwise - a plain number
   title:
@@ -35,29 +37,30 @@ settings:
       pitch: 1.0
 
 messages:
-  console: # Plugin messages in the server console (placeholders in {})
+  console: # Plugin messages in the server console (placeholders in {}, {prefix} supported, colors are stripped)
     enabled: true # Turn off to silence the plugin completely
-    startup: "MoonSalary is up and running! Groups: {groups}"
-    shutdown: "MoonSalary stopped!"
-    disabled_by_config: "The plugin is disabled in config.yml (settings.enabled: false) - no payouts will be made."
-    economy_hooked: "Economy hooked: {provider}"
-    economy_waiting: "Economy not found - retrying after the server startup completes."
-    economy_late: "Economy found - MoonSalary is fully enabled."
-    economy_missing: "MoonSalary could not enable: Vault and an economy plugin (EssentialsX, CMI, etc.) are required. Install the dependencies and restart the server."
-    startup_failed: "MoonSalary could not start: {reason} Payouts and AFK checks are disabled."
-    vault_paused: "Vault was disabled - salary payouts are paused."
-    vault_resumed: "Vault is back - salary payouts are resumed."
-    reloaded: "Configuration reloaded. Groups: {groups}"
-    invalid_value: "Invalid value for '{path}': {value}. Using: {defaultValue}."
-    group_no_salary: "Group '{group}' has no 'salary' field - skipped."
-    groups_section_missing: "Section 'groups' not found - no salaries will be paid."
-    groups_empty: "No salary groups found."
-    unknown_sound: "Unknown sound at '{path}'."
-    command_missing: "Command '{command}' not found in plugin.yml."
-    command_unregister_failed: "Failed to unregister command '{command}': {reason}"
-    placeholders_no_api: "Messages contain %...% placeholders but PlaceholderAPI is not installed - they will not be processed."
-    deposit_failed: "Failed to deposit {money} to {player}: {reason}"
-    deposit_exception: "Economy error while paying {player}: {reason}"
+    startup: "{prefix}MoonSalary is up and running! Groups: {groups}"
+    shutdown: "{prefix}MoonSalary stopped!"
+    disabled_by_config: "{prefix}The plugin is disabled in config.yml (settings.enabled: false) - no payouts will be made."
+    economy_hooked: "{prefix}Economy hooked: {provider}"
+    economy_waiting: "{prefix}Economy not found - retrying after the server startup completes."
+    economy_late: "{prefix}Economy found - MoonSalary is fully enabled."
+    economy_missing: "{prefix}MoonSalary could not enable: Vault and an economy plugin (EssentialsX, CMI, etc.) are required. Install the dependencies and restart the server."
+    startup_failed: "{prefix}MoonSalary could not start: {reason} Payouts and AFK checks are disabled."
+    vault_paused: "{prefix}Vault was disabled - salary payouts are paused."
+    vault_resumed: "{prefix}Vault is back - salary payouts are resumed."
+    reloaded: "{prefix}Configuration reloaded. Groups: {groups}"
+    invalid_value: "{prefix}Invalid value for '{path}': {value}. Using: {defaultValue}."
+    group_no_salary: "{prefix}Group '{group}' has no 'salary' field - skipped."
+    groups_section_missing: "{prefix}Section 'groups' not found - no salaries will be paid."
+    groups_empty: "{prefix}No salary groups found."
+    fallback_group_missing: "{prefix}Fallback group '{group}' not found in groups - fallback is disabled."
+    unknown_sound: "{prefix}Unknown sound at '{path}'."
+    command_missing: "{prefix}Command '{command}' not found in plugin.yml."
+    command_unregister_failed: "{prefix}Failed to unregister command '{command}': {reason}"
+    placeholders_no_api: "{prefix}Messages contain %...% placeholders but PlaceholderAPI is not installed - they will not be processed."
+    deposit_failed: "{prefix}Failed to deposit {money} to {player}: {reason}"
+    deposit_exception: "{prefix}Economy error while paying {player}: {reason}"
 
   prefix: "&b&lM&9&lL &7» &f"
 
@@ -112,7 +115,7 @@ messages:
 # HEX colors are supported: #42fffc text
 groups: # Group name = permission (prefix + name), for example: group.vip
 
-  default: # Base group - salary for everyone
+  default: # Base group - salary for everyone, including players without any group permission
     salary: 100
     priority: 0
     messages:

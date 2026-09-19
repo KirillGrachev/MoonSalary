@@ -29,6 +29,8 @@ public interface MoonSalaryConfig {
 
     PayoutMode getPayoutMode();
 
+    String getFallbackGroup();
+
     long getSalaryIntervalTicks();
 
     long getSalaryIntervalSeconds();

@@ -27,6 +27,7 @@ public class ConfigManager implements MoonSalaryConfig {
 
     private static final String PATH_ENABLED = "settings.enabled";
     private static final String PATH_PAYOUT_MODE = "settings.payout.mode";
+    private static final String PATH_FALLBACK_GROUP = "settings.payout.fallback_group";
     private static final String PATH_INTERVAL = "settings.payout.interval";
     private static final String PATH_EXECUTE_COMMANDS = "settings.execute_commands";
     private static final String PATH_FORMAT_MONEY = "settings.format_money";
@@ -105,6 +106,7 @@ public class ConfigManager implements MoonSalaryConfig {
     private SoundSettings salarySound;
 
     private PayoutMode payoutMode;
+    private String fallbackGroup;
     private long salaryIntervalSeconds;
     private String messagePrefix;
     private boolean messagesEnabled;
@@ -163,6 +165,7 @@ public class ConfigManager implements MoonSalaryConfig {
                 PATH_SOUND_SALARY_VOLUME, PATH_SOUND_SALARY_PITCH);
 
         payoutMode = parsePayoutMode();
+        fallbackGroup = config.getString(PATH_FALLBACK_GROUP, "default");
         salaryIntervalSeconds = secondsOrWarn(
                 config.getInt(PATH_INTERVAL, 3600), PATH_INTERVAL);
 
@@ -173,7 +176,28 @@ public class ConfigManager implements MoonSalaryConfig {
         blockedAfkMessage = color(config.getString(PATH_BLOCKED_AFK, ""));
 
         groups = loadGroups();
+        validateFallbackGroup();
 
+    }
+
+    /**
+     * Проверяет, что fallback-группа действительно настроена в секции groups.
+     */
+    private void validateFallbackGroup() {
+
+        if (fallbackGroup == null || fallbackGroup.isEmpty()) {
+            return;
+        }
+
+        boolean exists = groups.stream()
+                .anyMatch(settings -> settings.name().equalsIgnoreCase(fallbackGroup));
+
+        if (!exists) {
+
+            consoleService.log(ConsoleMessage.FALLBACK_GROUP_MISSING,
+                    "group", fallbackGroup);
+
+        }
     }
 
     /**
@@ -375,6 +399,11 @@ public class ConfigManager implements MoonSalaryConfig {
     @Override
     public PayoutMode getPayoutMode() {
         return payoutMode;
+    }
+
+    @Override
+    public String getFallbackGroup() {
+        return fallbackGroup != null ? fallbackGroup : "";
     }
 
     @Override

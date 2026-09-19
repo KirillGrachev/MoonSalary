@@ -33,6 +33,9 @@ public final class MoonSalary extends JavaPlugin {
     private TaskScheduler taskScheduler;
     private CommandDispatcher commandDispatcher;
 
+    /** Команды зарегистрированы только когда плагин реально работоспособен */
+    private boolean commandsRegistered;
+
     /** Внутренний сбой при старте: плагин остаётся включённым, но не работает */
     private boolean startupFailed;
 
@@ -45,16 +48,16 @@ public final class MoonSalary extends JavaPlugin {
 
             initializeComponents();
             registerListeners();
-            registerCommands();
 
             if (economyService.setup()) {
 
-                startPayouts();
+                activate(true);
 
             } else {
 
                 // Экономика может зарегистрироваться позже нас -
-                // повторяем попытку на первом тике, когда все плагины уже включены
+                // повторяем попытку на первом тике, когда все плагины уже включены.
+                // Команды до этого момента не регистрируются вовсе
                 consoleService.log(ConsoleMessage.ECONOMY_WAITING);
                 Bukkit.getScheduler().runTask(this, this::retryEconomyHook);
 
@@ -107,6 +110,46 @@ public final class MoonSalary extends JavaPlugin {
     }
 
     /**
+     * Пауза выплат: Vault выключен на работающем сервере.
+     */
+    public void pausePayouts() {
+
+        if (!economyService.isAvailable()) {
+            return;
+        }
+
+        taskScheduler.stop();
+        economyService.shutdown();
+
+        consoleService.log(ConsoleMessage.VAULT_PAUSED);
+
+    }
+
+    /**
+     * Возобновление выплат: Vault снова доступен.
+     * Если экономики не было с самого старта - это первая активация.
+     */
+    public void resumePayouts() {
+
+        if (economyService.isAvailable()) {
+            return;
+        }
+
+        if (!economyService.setup()) {
+            return;
+        }
+
+        boolean firstActivation = !commandsRegistered;
+
+        activate(firstActivation);
+
+        consoleService.log(firstActivation
+                ? ConsoleMessage.ECONOMY_LATE
+                : ConsoleMessage.VAULT_RESUMED);
+
+    }
+
+    /**
      * Создаёт все компоненты плагина.
      */
     private void initializeComponents() {
@@ -135,9 +178,58 @@ public final class MoonSalary extends JavaPlugin {
 
         new EventDispatcher(this).registerEvents(
                 new PlayerConnectionListener(afkTracker, taskScheduler),
-                new VaultStateListener(this, economyService, taskScheduler)
+                new VaultStateListener(this)
         );
 
+    }
+
+    /**
+     * Повторяет попытку подключения экономики после полного старта сервера.
+     * Если экономики всё ещё нет - плагин отключается. Команды к этому моменту
+     * не зарегистрированы, поэтому «зомби» с CommandException возникнуть не может.
+     */
+    private void retryEconomyHook() {
+
+        if (economyService.setup()) {
+
+            activate(true);
+            consoleService.log(ConsoleMessage.ECONOMY_LATE);
+            return;
+
+        }
+
+        consoleService.log(ConsoleMessage.ECONOMY_MISSING);
+        Bukkit.getPluginManager().disablePlugin(this);
+
+    }
+
+    /**
+     * Полноценная активация: задачи и команды появляются только здесь,
+     * когда наличие экономического провайдера уже подтверждено.
+     *
+     * @param logStartup выводить ли стартовое сообщение
+     */
+    private void activate(boolean logStartup) {
+
+        taskScheduler.start();
+
+        if (!commandsRegistered) {
+
+            registerCommands();
+            this.commandsRegistered = true;
+
+        }
+
+        if (logStartup) {
+
+            if (!configManager.isEnabled()) {
+                consoleService.log(ConsoleMessage.DISABLED_BY_CONFIG);
+            }
+
+            consoleService.log(ConsoleMessage.STARTUP,
+                    "groups", String.valueOf(groupRegistry.getRegisteredGroups().size()));
+
+        }
     }
 
     /**
@@ -151,43 +243,6 @@ public final class MoonSalary extends JavaPlugin {
                 new SalaryCommand(this, configManager, groupRegistry,
                         afkTracker, messageService, taskScheduler)
         );
-
-    }
-
-    /**
-     * Повторяет попытку подключения экономики после полного старта сервера.
-     * Если экономики всё ещё нет - плагин отключается: без экономики
-     * salary-плагин не работоспособен, а команда /salary вырегиструется,
-     * чтобы не оставаться «зомби» у выключенного плагина.
-     */
-    private void retryEconomyHook() {
-
-        if (economyService.setup()) {
-
-            startPayouts();
-            consoleService.log(ConsoleMessage.ECONOMY_LATE);
-            return;
-
-        }
-
-        consoleService.log(ConsoleMessage.ECONOMY_MISSING);
-        Bukkit.getPluginManager().disablePlugin(this);
-
-    }
-
-    /**
-     * Запускает циклы выплат и проверки AFK.
-     */
-    private void startPayouts() {
-
-        taskScheduler.start();
-
-        if (!configManager.isEnabled()) {
-            consoleService.log(ConsoleMessage.DISABLED_BY_CONFIG);
-        }
-
-        consoleService.log(ConsoleMessage.STARTUP,
-                "groups", String.valueOf(groupRegistry.getRegisteredGroups().size()));
 
     }
 
@@ -206,5 +261,4 @@ public final class MoonSalary extends JavaPlugin {
     public GroupRegistry getGroupRegistry() {
         return groupRegistry;
     }
-
 }

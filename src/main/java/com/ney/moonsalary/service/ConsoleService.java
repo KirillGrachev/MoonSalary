@@ -3,6 +3,7 @@ package com.ney.moonsalary.service;
 import com.ney.moonsalary.MoonSalary;
 import com.ney.moonsalary.config.ConfigManager;
 import com.ney.moonsalary.config.type.ConsoleMessage;
+import org.bukkit.ChatColor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -33,6 +34,9 @@ public class ConsoleService {
 
     /**
      * Выводит сообщение в консоль.
+     * <p>
+     * Поддерживает {prefix} в шаблоне; цветовые коды перед выводом снимаются,
+     * чтобы в консоль не уходили §-последовательности.
      *
      * @param message тип сообщения
      * @param tokens  пары "имя плейсхолдера", "значение"
@@ -47,7 +51,21 @@ public class ConsoleService {
                 ? configManager.getConsoleMessage(message.getKey(), message.getFallback())
                 : message.getFallback();
 
-        plugin.getLogger().log(message.getLevel(), applyTokens(template, tokens));
+        String formatted = applyTokens(template, tokens)
+                .replace("{prefix}", resolvePrefix());
+
+        plugin.getLogger().log(message.getLevel(), ChatColor.stripColor(formatted));
+
+    }
+
+    private @NotNull String resolvePrefix() {
+
+        if (configManager == null) {
+            return "";
+        }
+
+        String prefix = configManager.getMessagePrefix();
+        return prefix != null ? prefix : "";
 
     }
 

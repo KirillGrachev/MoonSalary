@@ -1,10 +1,6 @@
 package com.ney.moonsalary.listener;
 
 import com.ney.moonsalary.MoonSalary;
-import com.ney.moonsalary.config.type.ConsoleMessage;
-import com.ney.moonsalary.service.ConsoleService;
-import com.ney.moonsalary.service.EconomyService;
-import com.ney.moonsalary.task.TaskScheduler;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -16,51 +12,33 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Следит за жизненным циклом Vault.
  * <p>
- * Если Vault выключают на работающем сервере (reload плагинов, /pl disable),
- * выплаты ставятся на паузу без исключений; при возвращении Vault - возобновляются.
+ * Если Vault выключают на работающем сервере, выплаты ставятся на паузу;
+ * при возвращении Vault - возобновляются. Вся логика живёт в {@link MoonSalary},
+ * слушатель лишь распознаёт событие нужного плагина.
  */
 public class VaultStateListener implements Listener {
 
     private static final String VAULT_PLUGIN_NAME = "Vault";
 
-    private final EconomyService economyService;
-    private final TaskScheduler taskScheduler;
-    private final ConsoleService consoleService;
+    private final MoonSalary plugin;
 
-    public VaultStateListener(@NotNull MoonSalary plugin,
-                              @NotNull EconomyService economyService,
-                              @NotNull TaskScheduler taskScheduler) {
-        this.economyService = economyService;
-        this.taskScheduler = taskScheduler;
-        this.consoleService = plugin.getConsoleService();
+    public VaultStateListener(@NotNull MoonSalary plugin) {
+        this.plugin = plugin;
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPluginDisable(@NotNull PluginDisableEvent event) {
 
-        if (!isVault(event.getPlugin()) || !economyService.isAvailable()) {
-            return;
+        if (isVault(event.getPlugin())) {
+            plugin.pausePayouts();
         }
-
-        taskScheduler.stop();
-        economyService.shutdown();
-
-        consoleService.log(ConsoleMessage.VAULT_PAUSED);
-
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPluginEnable(@NotNull PluginEnableEvent event) {
 
-        if (!isVault(event.getPlugin()) || economyService.isAvailable()) {
-            return;
-        }
-
-        if (economyService.setup()) {
-
-            taskScheduler.start();
-            consoleService.log(ConsoleMessage.VAULT_RESUMED);
-
+        if (isVault(event.getPlugin())) {
+            plugin.resumePayouts();
         }
     }
 

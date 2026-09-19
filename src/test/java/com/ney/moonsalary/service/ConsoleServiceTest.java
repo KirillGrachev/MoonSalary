@@ -69,6 +69,23 @@ class ConsoleServiceTest {
     }
 
     @Test
+    @DisplayName("{prefix} подставляется, цветовые коды в консоль не попадают")
+    void substitutesPrefixAndStripsColors() {
+
+        ConfigManager configManager = mock(ConfigManager.class);
+        when(configManager.areConsoleMessagesEnabled()).thenReturn(true);
+        when(configManager.getMessagePrefix()).thenReturn("\u00A7b\u00A7lM\u00A79\u00A7lL \u00A77\u00BB \u00A7f");
+        when(configManager.getConsoleMessage("startup", ConsoleMessage.STARTUP.getFallback()))
+                .thenReturn("{prefix}Up and running: {groups} groups");
+
+        consoleService.attach(configManager);
+        consoleService.log(ConsoleMessage.STARTUP, "groups", "4");
+
+        verify(logger).log(Level.INFO, "ML \u00BB Up and running: 4 groups");
+
+    }
+
+    @Test
     @DisplayName("messages.console.enabled: false полностью глушит консоль")
     void silencesConsoleWhenDisabled() {
 

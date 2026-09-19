@@ -59,6 +59,9 @@ public enum ConsoleMessage {
     GROUPS_EMPTY("groups_empty", Level.WARNING,
             "No salary groups found."),
 
+    FALLBACK_GROUP_MISSING("fallback_group_missing", Level.WARNING,
+            "Fallback group '{group}' not found in groups - fallback is disabled."),
+
     UNKNOWN_SOUND("unknown_sound", Level.WARNING,
             "Unknown sound at '{path}'."),
 
