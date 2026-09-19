@@ -4,8 +4,7 @@ main: com.ney.moonsalary.MoonSalary
 api-version: 1.16
 author: Ney
 description: Salary for donation groups with AFK protection
-depend: [Vault]
-softdepend: [PlaceholderAPI]
+softdepend: [Vault, PlaceholderAPI]
 
 commands:
   salary:

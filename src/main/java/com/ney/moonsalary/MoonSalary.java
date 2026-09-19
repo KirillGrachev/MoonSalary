@@ -5,6 +5,7 @@ import com.ney.moonsalary.command.SalaryCommand;
 import com.ney.moonsalary.config.ConfigManager;
 import com.ney.moonsalary.event.EventDispatcher;
 import com.ney.moonsalary.listener.PlayerConnectionListener;
+import com.ney.moonsalary.listener.VaultStateListener;
 import com.ney.moonsalary.registry.GroupRegistry;
 import com.ney.moonsalary.service.AfkTracker;
 import com.ney.moonsalary.service.EconomyService;
@@ -13,6 +14,8 @@ import com.ney.moonsalary.service.SalaryPayoutService;
 import com.ney.moonsalary.task.TaskScheduler;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.util.logging.Level;
 
 public final class MoonSalary extends JavaPlugin {
 
@@ -27,42 +30,33 @@ public final class MoonSalary extends JavaPlugin {
     @Override
     public void onEnable() {
 
-        this.economyService = new EconomyService(this);
+        try {
 
-        if (!economyService.setup()) {
-            getLogger().severe("Экономика недоступна - MoonSalary будет отключён!");
+            initializeComponents();
+            registerListeners();
+            registerCommands();
+
+            if (economyService.setup()) {
+
+                startPayouts();
+
+            } else {
+
+                // Экономика может зарегистрироваться позже нас -
+                // повторяем попытку на первом тике, когда все плагины уже включены
+                getLogger().warning("Экономика не найдена - повторная попытка после завершения запуска сервера.");
+                Bukkit.getScheduler().runTask(this, this::retryEconomyHook);
+
+            }
+
+        } catch (Exception exception) {
+
+            getLogger().severe("MoonSalary не смог включиться: " + exception.getMessage());
+            getLogger().log(Level.FINE, "Причина сбоя при включении", exception);
+
             Bukkit.getPluginManager().disablePlugin(this);
-            return;
+
         }
-
-        this.configManager = new ConfigManager(this);
-        this.groupRegistry = new GroupRegistry(configManager);
-        this.messageService = new MessageService(this, configManager, economyService);
-        this.afkTracker = new AfkTracker(configManager);
-        this.payoutService = new SalaryPayoutService(this, configManager, economyService, messageService);
-
-        this.taskScheduler = new TaskScheduler(this, configManager, groupRegistry,
-                afkTracker, messageService, payoutService);
-
-        // Регистрация слушателей
-        new EventDispatcher(this).registerEvents(
-                new PlayerConnectionListener(afkTracker)
-        );
-
-        // Регистрация команд
-        new CommandDispatcher(this).registerCommand("salary",
-                new SalaryCommand(this, configManager, groupRegistry,
-                        afkTracker, messageService, taskScheduler)
-        );
-
-        taskScheduler.start();
-
-        if (!configManager.isEnabled()) {
-            getLogger().warning("Плагин выключен в config.yml (settings.enabled: false).");
-        }
-
-        getLogger().info("MoonSalary успешно запущен! Групп: " + groupRegistry.getRegisteredGroups().size());
-
     }
 
     @Override
@@ -85,6 +79,84 @@ public final class MoonSalary extends JavaPlugin {
         }
 
         getLogger().info("MoonSalary остановлен!");
+
+    }
+
+    /**
+     * Создаёт все компоненты плагина.
+     */
+    private void initializeComponents() {
+
+        this.economyService = new EconomyService(this);
+        this.configManager = new ConfigManager(this);
+        this.groupRegistry = new GroupRegistry(configManager);
+        this.messageService = new MessageService(this, configManager, economyService);
+        this.afkTracker = new AfkTracker(configManager);
+        this.payoutService = new SalaryPayoutService(this, configManager, economyService, messageService);
+
+        this.taskScheduler = new TaskScheduler(this, configManager, groupRegistry,
+                afkTracker, economyService, messageService, payoutService);
+
+    }
+
+    /**
+     * Регистрирует слушателей плагина.
+     */
+    private void registerListeners() {
+
+        new EventDispatcher(this).registerEvents(
+                new PlayerConnectionListener(afkTracker),
+                new VaultStateListener(this, economyService, taskScheduler)
+        );
+
+    }
+
+    /**
+     * Регистрирует команды плагина.
+     */
+    private void registerCommands() {
+
+        new CommandDispatcher(this).registerCommand("salary",
+                new SalaryCommand(this, configManager, groupRegistry,
+                        afkTracker, messageService, taskScheduler)
+        );
+
+    }
+
+    /**
+     * Повторяет попытку подключения экономики после полного старта сервера.
+     * Если экономики всё ещё нет - плагин выключается одним понятным сообщением,
+     * без stacktrace в консоли.
+     */
+    private void retryEconomyHook() {
+
+        if (economyService.setup()) {
+
+            startPayouts();
+            getLogger().info("Экономика найдена - MoonSalary полностью включён.");
+            return;
+
+        }
+
+        getLogger().severe("MoonSalary не включён: требуются Vault и плагин экономики "
+                + "(EssentialsX, CMI и т.д.). Установите зависимости и перезапустите сервер.");
+
+        Bukkit.getPluginManager().disablePlugin(this);
+
+    }
+
+    /**
+     * Запускает циклы выплат и проверки AFK.
+     */
+    private void startPayouts() {
+
+        taskScheduler.start();
+
+        if (!configManager.isEnabled()) {
+            getLogger().warning("Плагин выключен в config.yml (settings.enabled: false).");
+        }
+
+        getLogger().info("MoonSalary успешно запущен! Групп: " + groupRegistry.getRegisteredGroups().size());
 
     }
 

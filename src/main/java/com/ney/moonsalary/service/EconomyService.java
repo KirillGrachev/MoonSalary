@@ -27,19 +27,13 @@ public class EconomyService {
     public boolean setup() {
 
         if (plugin.getServer().getPluginManager().getPlugin("Vault") == null) {
-
-            plugin.getLogger().severe("Vault не найден! Плагин не может работать без экономики.");
             return false;
-
         }
 
         var registration = plugin.getServer().getServicesManager().getRegistration(Economy.class);
 
         if (registration == null) {
-
-            plugin.getLogger().severe("Экономика не найдена! Установите плагин экономики (EssentialsX, CMI и т.д.).");
             return false;
-
         }
 
         this.economy = registration.getProvider();
