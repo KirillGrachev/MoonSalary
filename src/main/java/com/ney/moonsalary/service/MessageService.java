@@ -120,7 +120,7 @@ public class MessageService {
         result = PlaceholderUtil.applyServerTime(result);
         warnAboutInvalidTimePattern(result);
 
-        result = PlaceholderUtil.replaceTokens(result, context, money,
+        result = PlaceholderUtil.replaceTokens(result, context, formatMoney(money),
                 group != null ? group.getName() : null,
                 configManager.getSalaryIntervalSeconds(),
                 status,

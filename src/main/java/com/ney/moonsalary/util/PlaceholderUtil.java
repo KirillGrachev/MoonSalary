@@ -153,7 +153,7 @@ public class PlaceholderUtil {
      */
     public static @NotNull String replaceTokens(@NotNull String text,
                                                 @Nullable Player player,
-                                                double money,
+                                                @NotNull String money,
                                                 @Nullable String group,
                                                 long interval,
                                                 @NotNull String status,
@@ -162,7 +162,7 @@ public class PlaceholderUtil {
 
         return text
                 .replace("{player}", player != null ? player.getName() : "unknown")
-                .replace("{money}", formatMoney(money))
+                .replace("{money}", money)
                 .replace("{group}", group != null ? group : "none")
                 .replace("{interval}", String.valueOf(interval))
                 .replace("{status}", status)

@@ -114,7 +114,7 @@ class HexColorUtilTest {
     void replacesTokens() {
 
         String result = PlaceholderUtil.replaceTokens("{group}: {money} / {interval} ({status}) {next}",
-                null, 250.0D, "staff", 3700L, "online", 2, "1h");
+                null, "250", "staff", 3700L, "online", 2, "1h");
 
         assertEquals("staff: 250 / 3700 (online) 1h", result);
 

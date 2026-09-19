@@ -20,6 +20,9 @@ class AfkTrackerTest {
 
     private final UUID playerId = UUID.randomUUID();
 
+    /** Сильная ссылка: Location держит мир через WeakReference */
+    private final World world = mock(World.class);
+
     private Player mockPlayer() {
 
         Player player = mock(Player.class);
@@ -144,7 +147,6 @@ class AfkTrackerTest {
         ConfigManager configManager = mock(ConfigManager.class);
         when(configManager.isAfkRotationIgnored()).thenReturn(true);
 
-        World world = mock(World.class);
         when(world.getName()).thenReturn("world");
 
         Player player = mockPlayer();
@@ -163,7 +165,6 @@ class AfkTrackerTest {
 
     private Location location(double x, double y, double z, float yaw, float pitch) {
 
-        World world = mock(World.class);
         when(world.getName()).thenReturn("world");
 
         return new Location(world, x, y, z, yaw, pitch);
