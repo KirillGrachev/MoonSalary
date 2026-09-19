@@ -1,6 +1,6 @@
 package com.ney.moonsalary.config;
 
-import com.ney.moonsalary.config.type.AfkNotifyType;
+import com.ney.moonsalary.config.type.PayoutMode;
 import com.ney.moonsalary.config.type.SalaryGroupSettings;
 import com.ney.moonsalary.config.type.SoundSettings;
 
@@ -23,17 +23,17 @@ public interface MoonSalaryConfig {
 
     boolean isAfkRotationIgnored();
 
-    boolean areAfkNotificationsEnabled();
-
-    boolean shouldRepeatAfkMessage();
-
     boolean areMessagesEnabled();
 
     boolean arePermissionsEnabled();
 
+    PayoutMode getPayoutMode();
+
     long getSalaryIntervalTicks();
 
     long getSalaryIntervalSeconds();
+
+    long getSalaryIntervalMillis();
 
     long getAfkCheckIntervalTicks();
 
@@ -44,10 +44,6 @@ public interface MoonSalaryConfig {
     int getTitleStay();
 
     int getTitleFadeOut();
-
-    AfkNotifyType getAfkNotifyType();
-
-    SoundSettings getAfkSound();
 
     SoundSettings getSalarySound();
 
@@ -65,7 +61,7 @@ public interface MoonSalaryConfig {
 
     String getSalarySubtitle();
 
-    List<String> getAfkMessage();
+    String getBlockedAfkMessage();
 
     List<String> getInfoSelfMessage();
 
@@ -92,6 +88,8 @@ public interface MoonSalaryConfig {
     String getUnknownPlayerMessage();
 
     String getReloadSuccessMessage();
+
+    String getStartupFailedMessage();
 
     List<SalaryGroupSettings> getGroups();
 

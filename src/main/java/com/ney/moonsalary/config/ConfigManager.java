@@ -1,9 +1,11 @@
 package com.ney.moonsalary.config;
 
 import com.ney.moonsalary.MoonSalary;
-import com.ney.moonsalary.config.type.AfkNotifyType;
+import com.ney.moonsalary.config.type.ConsoleMessage;
+import com.ney.moonsalary.config.type.PayoutMode;
 import com.ney.moonsalary.config.type.SalaryGroupSettings;
 import com.ney.moonsalary.config.type.SoundSettings;
+import com.ney.moonsalary.service.ConsoleService;
 import com.ney.moonsalary.util.HexColorUtil;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -20,10 +22,12 @@ import java.util.stream.Collectors;
 public class ConfigManager implements MoonSalaryConfig {
 
     private final MoonSalary plugin;
+    private final ConsoleService consoleService;
     private FileConfiguration config;
 
     private static final String PATH_ENABLED = "settings.enabled";
-    private static final String PATH_INTERVAL = "settings.interval";
+    private static final String PATH_PAYOUT_MODE = "settings.payout.mode";
+    private static final String PATH_INTERVAL = "settings.payout.interval";
     private static final String PATH_EXECUTE_COMMANDS = "settings.execute_commands";
     private static final String PATH_FORMAT_MONEY = "settings.format_money";
 
@@ -36,9 +40,6 @@ public class ConfigManager implements MoonSalaryConfig {
     private static final String PATH_AFK_CHECK_INTERVAL = "settings.afk.check_interval";
     private static final String PATH_AFK_THRESHOLD = "settings.afk.threshold";
     private static final String PATH_AFK_IGNORE_ROTATION = "settings.afk.ignore_rotation";
-    private static final String PATH_AFK_NOTIFY_ENABLED = "settings.afk.notify.enabled";
-    private static final String PATH_AFK_NOTIFY_REPEAT = "settings.afk.notify.repeat";
-    private static final String PATH_AFK_NOTIFY_TITLE = "settings.afk.notify.title";
 
     private static final String PATH_PERMISSIONS_ENABLED = "settings.permissions.enabled";
     private static final String PATH_PERMISSION_PREFIX = "settings.permissions.prefix";
@@ -46,10 +47,6 @@ public class ConfigManager implements MoonSalaryConfig {
     private static final String PATH_PERMISSION_RELOAD = "settings.permissions.reload";
     private static final String PATH_PERMISSION_LIST = "settings.permissions.list";
 
-    private static final String PATH_SOUND_AFK_ENABLED = "settings.sounds.afk.enabled";
-    private static final String PATH_SOUND_AFK_NAME = "settings.sounds.afk.sound";
-    private static final String PATH_SOUND_AFK_VOLUME = "settings.sounds.afk.volume";
-    private static final String PATH_SOUND_AFK_PITCH = "settings.sounds.afk.pitch";
     private static final String PATH_SOUND_SALARY_ENABLED = "settings.sounds.salary.enabled";
     private static final String PATH_SOUND_SALARY_NAME = "settings.sounds.salary.sound";
     private static final String PATH_SOUND_SALARY_VOLUME = "settings.sounds.salary.volume";
@@ -57,16 +54,19 @@ public class ConfigManager implements MoonSalaryConfig {
 
     private static final String PATH_GROUPS = "groups";
 
+    private static final String PATH_CONSOLE_ENABLED = "messages.console.enabled";
+    private static final String PATH_CONSOLE = "messages.console.";
     private static final String PATH_MESSAGE_PREFIX = "messages.prefix";
     private static final String PATH_MESSAGES_ENABLED = "messages.on_salary.enabled";
     private static final String PATH_SALARY_TITLE = "messages.on_salary.title";
     private static final String PATH_SALARY_SUBTITLE = "messages.on_salary.subtitle";
-    private static final String PATH_AFK_MESSAGE = "messages.on_afk.text";
+    private static final String PATH_BLOCKED_AFK = "messages.on_salary.blocked_afk";
 
     private static final String PATH_NO_PERMISSION = "messages.command.no_permission";
     private static final String PATH_USAGE = "messages.command.usage";
     private static final String PATH_UNKNOWN_PLAYER = "messages.command.unknown_player";
     private static final String PATH_RELOAD_SUCCESS = "messages.command.reload_success";
+    private static final String PATH_STARTUP_FAILED = "messages.command.startup_failed";
     private static final String PATH_INFO_SELF = "messages.command.info.self";
     private static final String PATH_INFO_OTHER = "messages.command.info.other";
     private static final String PATH_LIST_HEADER = "messages.command.list.header";
@@ -82,6 +82,7 @@ public class ConfigManager implements MoonSalaryConfig {
     private static final long MILLIS_PER_SECOND = 1000L;
 
     private boolean enabled;
+    private boolean consoleEnabled;
     private boolean commandsEnabled;
     private boolean moneyFormattingEnabled;
 
@@ -94,8 +95,6 @@ public class ConfigManager implements MoonSalaryConfig {
     private long afkCheckIntervalTicks;
     private long afkThresholdMillis;
     private boolean afkRotationIgnored;
-    private boolean afkMessageRepeat;
-    private AfkNotifyType afkNotifyType;
 
     private boolean permissionsEnabled;
     private String groupPermissionPrefix;
@@ -103,20 +102,21 @@ public class ConfigManager implements MoonSalaryConfig {
     private String permissionReload;
     private String permissionList;
 
-    private SoundSettings afkSound;
     private SoundSettings salarySound;
 
+    private PayoutMode payoutMode;
     private long salaryIntervalSeconds;
     private String messagePrefix;
     private boolean messagesEnabled;
     private String salaryTitle;
     private String salarySubtitle;
-    private List<String> afkMessage;
+    private String blockedAfkMessage;
     private List<SalaryGroupSettings> groups;
 
-    public ConfigManager(MoonSalary plugin) {
+    public ConfigManager(MoonSalary plugin, ConsoleService consoleService) {
 
         this.plugin = plugin;
+        this.consoleService = consoleService;
         saveDefaultConfig();
 
         loadConfig();
@@ -136,6 +136,7 @@ public class ConfigManager implements MoonSalaryConfig {
     private void cacheConfigValues() {
 
         enabled = config.getBoolean(PATH_ENABLED, true);
+        consoleEnabled = config.getBoolean(PATH_CONSOLE_ENABLED, true);
         commandsEnabled = config.getBoolean(PATH_EXECUTE_COMMANDS, true);
         moneyFormattingEnabled = config.getBoolean(PATH_FORMAT_MONEY, false);
 
@@ -150,8 +151,6 @@ public class ConfigManager implements MoonSalaryConfig {
                 config.getInt(PATH_AFK_CHECK_INTERVAL, 20), "settings.afk.check_interval");
         afkThresholdMillis = secondsToMillis(
                 config.getInt(PATH_AFK_THRESHOLD, 300), "settings.afk.threshold");
-        afkMessageRepeat = config.getBoolean(PATH_AFK_NOTIFY_REPEAT, true);
-        afkNotifyType = resolveAfkNotifyType();
 
         permissionsEnabled = config.getBoolean(PATH_PERMISSIONS_ENABLED, true);
         groupPermissionPrefix = config.getString(PATH_PERMISSION_PREFIX, "group.");
@@ -159,21 +158,19 @@ public class ConfigManager implements MoonSalaryConfig {
         permissionReload = config.getString(PATH_PERMISSION_RELOAD, "moon_salary.admin.reload");
         permissionList = config.getString(PATH_PERMISSION_LIST, "moon_salary.admin.list");
 
-        afkSound = loadSound("settings.sounds.afk",
-                PATH_SOUND_AFK_ENABLED, PATH_SOUND_AFK_NAME,
-                PATH_SOUND_AFK_VOLUME, PATH_SOUND_AFK_PITCH);
         salarySound = loadSound("settings.sounds.salary",
                 PATH_SOUND_SALARY_ENABLED, PATH_SOUND_SALARY_NAME,
                 PATH_SOUND_SALARY_VOLUME, PATH_SOUND_SALARY_PITCH);
 
+        payoutMode = parsePayoutMode();
         salaryIntervalSeconds = secondsOrWarn(
-                config.getInt(PATH_INTERVAL, 3700), "settings.interval");
+                config.getInt(PATH_INTERVAL, 3600), PATH_INTERVAL);
 
         messagePrefix = color(config.getString(PATH_MESSAGE_PREFIX, ""));
         messagesEnabled = config.getBoolean(PATH_MESSAGES_ENABLED, true);
         salaryTitle = color(config.getString(PATH_SALARY_TITLE, ""));
         salarySubtitle = color(config.getString(PATH_SALARY_SUBTITLE, ""));
-        afkMessage = colorList(config.getStringList(PATH_AFK_MESSAGE));
+        blockedAfkMessage = color(config.getString(PATH_BLOCKED_AFK, ""));
 
         groups = loadGroups();
 
@@ -190,7 +187,7 @@ public class ConfigManager implements MoonSalaryConfig {
 
         if (section == null) {
 
-            plugin.getLogger().warning("Секция 'groups' не найдена - зарплаты выдаваться не будут.");
+            consoleService.log(ConsoleMessage.GROUPS_SECTION_MISSING);
             return Collections.emptyList();
 
         }
@@ -205,7 +202,7 @@ public class ConfigManager implements MoonSalaryConfig {
 
             if (!groupSection.isSet("salary")) {
 
-                plugin.getLogger().warning("Группа '" + groupName + "' не имеет поля 'salary' - пропущена.");
+                consoleService.log(ConsoleMessage.GROUP_NO_SALARY, "group", groupName);
                 continue;
 
             }
@@ -221,7 +218,7 @@ public class ConfigManager implements MoonSalaryConfig {
         }
 
         if (loadedGroups.isEmpty()) {
-            plugin.getLogger().warning("Не найдено ни одной группы зарплат.");
+            consoleService.log(ConsoleMessage.GROUPS_EMPTY);
         }
 
         return Collections.unmodifiableList(loadedGroups);
@@ -246,6 +243,28 @@ public class ConfigManager implements MoonSalaryConfig {
 
     }
 
+    /**
+     * Читает режим выплат, при некорректном значении возвращается GLOBAL.
+     *
+     * @return режим выплат
+     */
+    private @NotNull PayoutMode parsePayoutMode() {
+
+        String configValue = config.getString(PATH_PAYOUT_MODE, "GLOBAL");
+
+        try {
+            return PayoutMode.valueOf(configValue.trim().toUpperCase());
+        } catch (IllegalArgumentException exception) {
+
+            consoleService.log(ConsoleMessage.INVALID_VALUE,
+                    "path", PATH_PAYOUT_MODE,
+                    "value", configValue,
+                    "defaultValue", PayoutMode.GLOBAL.name());
+            return PayoutMode.GLOBAL;
+
+        }
+    }
+
     private @NotNull SoundSettings loadSound(@NotNull String logPath,
                                              @NotNull String enabledPath,
                                              @NotNull String namePath,
@@ -257,19 +276,8 @@ public class ConfigManager implements MoonSalaryConfig {
                 config.getBoolean(enabledPath, true),
                 (float) config.getDouble(volumePath, 1.0D),
                 (float) config.getDouble(pitchPath, 1.0D),
-                () -> plugin.getLogger().warning("Неизвестный звук в '" + logPath + ".sound'.")
+                () -> consoleService.log(ConsoleMessage.UNKNOWN_SOUND, "path", logPath + ".sound")
         );
-
-    }
-
-    private @NotNull AfkNotifyType resolveAfkNotifyType() {
-
-        if (!config.getBoolean(PATH_AFK_NOTIFY_ENABLED, true)) {
-            return AfkNotifyType.NONE;
-        }
-
-        boolean title = config.getBoolean(PATH_AFK_NOTIFY_TITLE, false);
-        return title ? AfkNotifyType.CHAT_TITLE : AfkNotifyType.CHAT;
 
     }
 
@@ -285,8 +293,10 @@ public class ConfigManager implements MoonSalaryConfig {
 
         if (seconds < MIN_INTERVAL_SECONDS) {
 
-            plugin.getLogger().warning("Некорректное значение '" + path + "': " + seconds
-                    + ". Используется: " + MIN_INTERVAL_SECONDS + ".");
+            consoleService.log(ConsoleMessage.INVALID_VALUE,
+                    "path", path,
+                    "value", String.valueOf(seconds),
+                    "defaultValue", String.valueOf(MIN_INTERVAL_SECONDS));
             return MIN_INTERVAL_SECONDS;
 
         }
@@ -310,6 +320,21 @@ public class ConfigManager implements MoonSalaryConfig {
     @Override
     public boolean isEnabled() {
         return enabled;
+    }
+
+    public boolean areConsoleMessagesEnabled() {
+        return consoleEnabled;
+    }
+
+    /**
+     * Возвращает шаблон сообщения консоли из конфигурации.
+     *
+     * @param key      ключ внутри messages.console
+     * @param fallback текст по умолчанию
+     * @return готовый шаблон
+     */
+    public @NotNull String getConsoleMessage(@NotNull String key, @NotNull String fallback) {
+        return config.getString(PATH_CONSOLE + key, fallback);
     }
 
     @Override
@@ -338,16 +363,6 @@ public class ConfigManager implements MoonSalaryConfig {
     }
 
     @Override
-    public boolean areAfkNotificationsEnabled() {
-        return afkNotifyType != AfkNotifyType.NONE;
-    }
-
-    @Override
-    public boolean shouldRepeatAfkMessage() {
-        return afkMessageRepeat;
-    }
-
-    @Override
     public boolean areMessagesEnabled() {
         return messagesEnabled;
     }
@@ -358,8 +373,18 @@ public class ConfigManager implements MoonSalaryConfig {
     }
 
     @Override
+    public PayoutMode getPayoutMode() {
+        return payoutMode;
+    }
+
+    @Override
     public long getSalaryIntervalTicks() {
         return salaryIntervalSeconds * TICKS_PER_SECOND;
+    }
+
+    @Override
+    public long getSalaryIntervalMillis() {
+        return salaryIntervalSeconds * MILLIS_PER_SECOND;
     }
 
     @Override
@@ -390,16 +415,6 @@ public class ConfigManager implements MoonSalaryConfig {
     @Override
     public int getTitleFadeOut() {
         return titleFadeOut;
-    }
-
-    @Override
-    public AfkNotifyType getAfkNotifyType() {
-        return afkNotifyType;
-    }
-
-    @Override
-    public SoundSettings getAfkSound() {
-        return afkSound;
     }
 
     @Override
@@ -443,8 +458,8 @@ public class ConfigManager implements MoonSalaryConfig {
     }
 
     @Override
-    public List<String> getAfkMessage() {
-        return afkMessage;
+    public String getBlockedAfkMessage() {
+        return blockedAfkMessage;
     }
 
     @Override
@@ -510,6 +525,11 @@ public class ConfigManager implements MoonSalaryConfig {
     @Override
     public String getReloadSuccessMessage() {
         return color(config.getString(PATH_RELOAD_SUCCESS, ""));
+    }
+
+    @Override
+    public String getStartupFailedMessage() {
+        return color(config.getString(PATH_STARTUP_FAILED, ""));
     }
 
     @Override

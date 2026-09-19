@@ -1,6 +1,7 @@
 package com.ney.moonsalary.service;
 
 import com.ney.moonsalary.config.ConfigManager;
+import com.ney.moonsalary.config.type.AfkState;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -62,6 +63,26 @@ public class AfkTracker {
 
         return configManager.arePermissionsEnabled()
                 && player.hasPermission(configManager.getPermissionBypassAfk());
+
+    }
+
+    /**
+     * Определяет AFK-состояние игрока с учётом настройки защиты и права обхода.
+     *
+     * @param player игрок
+     * @return состояние AFK
+     */
+    public @NotNull AfkState resolveState(@NotNull Player player) {
+
+        if (!configManager.isAfkEnabled()) {
+            return AfkState.ACTIVE;
+        }
+
+        if (!isMarked(player)) {
+            return AfkState.ACTIVE;
+        }
+
+        return hasAfkBypass(player) ? AfkState.BYPASSED : AfkState.AFK;
 
     }
 

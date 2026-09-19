@@ -72,13 +72,27 @@ class HexColorUtilTest {
     }
 
     @Test
+    @DisplayName("Длительность форматируется двумя старшими единицами")
+    void formatsDuration() {
+
+        assertEquals("0s", PlaceholderUtil.formatDuration(0L));
+        assertEquals("5s", PlaceholderUtil.formatDuration(5_000L));
+        assertEquals("1m 1s", PlaceholderUtil.formatDuration(61_000L));
+        assertEquals("1m 15s", PlaceholderUtil.formatDuration(75_000L));
+        assertEquals("1h", PlaceholderUtil.formatDuration(3_600_000L));
+        assertEquals("1h 1m", PlaceholderUtil.formatDuration(3_660_000L));
+        assertEquals("1d 1h", PlaceholderUtil.formatDuration(90_061_000L));
+
+    }
+
+    @Test
     @DisplayName("Внутренние плейсхолдеры подставляются в строку")
     void replacesTokens() {
 
-        String result = PlaceholderUtil.replaceTokens("{group}: {money} / {interval} ({status})",
-                null, 250.0D, "staff", 3700L, "online", 2);
+        String result = PlaceholderUtil.replaceTokens("{group}: {money} / {interval} ({status}) {next}",
+                null, 250.0D, "staff", 3700L, "online", 2, "1h");
 
-        assertEquals("staff: 250 / 3700 (online)", result);
+        assertEquals("staff: 250 / 3700 (online) 1h", result);
 
     }
 }

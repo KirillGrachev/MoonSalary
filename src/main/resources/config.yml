@@ -1,6 +1,9 @@
 settings:
   enabled: true # Full on/off switch of the plugin
-  interval: 3600 # Salary payout interval (in seconds)
+  payout:
+    mode: GLOBAL # GLOBAL - payday: everyone is paid at the same time, every interval
+    # PERSONAL - personal timer: the countdown starts when the player joins
+    interval: 3600 # Time between payouts (in seconds)
   execute_commands: true # Execute the commands of the salary group
   format_money: false # Format {money} through the economy plugin (Vault), otherwise - a plain number
   title:
@@ -14,10 +17,8 @@ settings:
     check_interval: 20 # How often the player position is checked (in seconds)
     threshold: 300 # How long the player has to stand still to become AFK (in seconds)
     ignore_rotation: true # Do not treat head rotation as movement
-    notify:
-      enabled: true # Send a message when the player becomes AFK
-      repeat: true # Remind about AFK on every payout attempt
-      title: false # Also show the AFK message as a title
+    # The check is silent by design: no messages, sounds or titles.
+    # It only blocks the payout, so it never conflicts with other AFK plugins.
 
   permissions:
     enabled: true # Enable permission system (bypass.afk, admin.reload, admin.list)
@@ -27,11 +28,6 @@ settings:
     list: "moon_salary.admin.list"
 
   sounds:
-    afk:
-      enabled: true
-      sound: ITEM_CROSSBOW_SHOOT
-      volume: 0.7
-      pitch: 1.0
     salary:
       enabled: true
       sound: BLOCK_WOODEN_BUTTON_CLICK_ON
@@ -39,22 +35,43 @@ settings:
       pitch: 1.0
 
 messages:
+  console: # Plugin messages in the server console (placeholders in {})
+    enabled: true # Turn off to silence the plugin completely
+    startup: "MoonSalary успешно запущен! Групп: {groups}"
+    shutdown: "MoonSalary остановлен!"
+    disabled_by_config: "Плагин выключен в config.yml (settings.enabled: false) - выплаты не производятся."
+    economy_hooked: "Экономика подключена: {provider}"
+    economy_waiting: "Экономика не найдена - повторная попытка после завершения запуска сервера."
+    economy_late: "Экономика найдена - MoonSalary полностью включён."
+    economy_missing: "Плагин не включён: требуются Vault и плагин экономики (EssentialsX, CMI и т.д.). Установите зависимости и перезапустите сервер."
+    startup_failed: "MoonSalary не смог включиться: {reason} Выплаты и AFK-проверки отключены."
+    vault_paused: "Vault выключен - выдача зарплат приостановлена."
+    vault_resumed: "Vault снова доступен - выдача зарплат возобновлена."
+    reloaded: "Конфигурация перезагружена. Групп: {groups}"
+    invalid_value: "Некорректное значение '{path}': {value}. Используется: {defaultValue}."
+    group_no_salary: "Группа '{group}' не имеет поля 'salary' - пропущена."
+    groups_section_missing: "Секция 'groups' не найдена - зарплаты выдаваться не будут."
+    groups_empty: "Не найдено ни одной группы зарплат."
+    unknown_sound: "Неизвестный звук в '{path}'."
+    command_missing: "Команда '{command}' не найдена в plugin.yml."
+    placeholders_no_api: "В сообщениях используются плейсхолдеры %...%, но PlaceholderAPI не установлен - они не будут обработаны."
+    deposit_failed: "Не удалось выдать {money} игроку {player}: {reason}"
+    deposit_exception: "Ошибка экономики при выдаче зарплаты игроку {player}: {reason}"
+
   prefix: "&b&lM&9&lL &7» &f"
 
   on_salary:
     enabled: true # Group messages (see groups.<name>.messages)
     title: "&6Salary"
     subtitle: "&fYou received &e{money} ⛂"
-
-  on_afk:
-    enabled: true
-    text: "&cYou cannot receive a salary while standing still!"
+    blocked_afk: '' # One line on a blocked payout; empty string = stay silent
 
   command:
     no_permission: "&cYou don't have permission to do that."
     usage: "&7Usage: &e/salary &7[info|reload|list] [player]"
     unknown_player: "&cPlayer &e{player} &cnot found."
     reload_success: "&aConfiguration reloaded successfully!"
+    startup_failed: "&cThe plugin could not start due to an internal error - check the console."
 
     info:
       self:
@@ -63,6 +80,7 @@ messages:
         - " &6╠ &fGroup: &e{group}"
         - " &6╠ &fAmount: &e{money} ⛂"
         - " &6╠ &fInterval: &e{interval} sec."
+        - " &6╠ &fNext payout: &e{next}"
         - " &6╠ &fStatus: {status}"
         - " &6╚ &fCommands: &e{commands}"
         - ""
@@ -71,6 +89,7 @@ messages:
         - " &6╔ &fSalary of &e{player}"
         - " &6╠ &fGroup: &e{group}"
         - " &6╠ &fAmount: &e{money} ⛂"
+        - " &6╠ &fNext payout: &e{next}"
         - " &6╠ &fStatus: {status}"
         - " &6╚ &fCommands: &e{commands}"
         - ""
@@ -86,7 +105,8 @@ messages:
       offline: "&8offline"
       no_group: "&cgroup not found"
 
-# Placeholders: {money}, {player}, {group}, {interval}, {status}, {commands}
+# Placeholders: {money}, {player}, {group}, {interval}, {status}, {commands}, {next}
+# {next} - countdown to the next payout (personal timer or the nearest payday)
 # HEX colors are supported: #42fffc text
 groups: # Group name = permission (prefix + name), for example: group.vip
 

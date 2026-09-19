@@ -3,9 +3,11 @@ package com.ney.moonsalary.command;
 import com.ney.moonsalary.MoonSalary;
 import com.ney.moonsalary.config.ConfigManager;
 import com.ney.moonsalary.config.type.AfkState;
+import com.ney.moonsalary.config.type.ConsoleMessage;
 import com.ney.moonsalary.registry.GroupRegistry;
 import com.ney.moonsalary.registry.SalaryGroup;
 import com.ney.moonsalary.service.AfkTracker;
+import com.ney.moonsalary.service.ConsoleService;
 import com.ney.moonsalary.service.MessageService;
 import com.ney.moonsalary.task.TaskScheduler;
 import org.bukkit.Bukkit;
@@ -35,6 +37,7 @@ public class SalaryCommand implements TabExecutor {
     private final AfkTracker afkTracker;
     private final MessageService messageService;
     private final TaskScheduler taskScheduler;
+    private final ConsoleService consoleService;
 
     public SalaryCommand(@NotNull MoonSalary plugin,
                          @NotNull ConfigManager configManager,
@@ -48,6 +51,7 @@ public class SalaryCommand implements TabExecutor {
         this.afkTracker = afkTracker;
         this.messageService = messageService;
         this.taskScheduler = taskScheduler;
+        this.consoleService = plugin.getConsoleService();
     }
 
     @Override
@@ -55,6 +59,13 @@ public class SalaryCommand implements TabExecutor {
                              @NotNull Command command,
                              @NotNull String label,
                              String @NotNull [] args) {
+
+        if (plugin.isStartupFailed()) {
+
+            sendMessage(sender, configManager.getStartupFailedMessage());
+            return true;
+
+        }
 
         if (args.length == 0) {
 
@@ -207,6 +218,9 @@ public class SalaryCommand implements TabExecutor {
         groupRegistry.reloadRegistry();
         afkTracker.clear();
         taskScheduler.reschedule();
+
+        consoleService.log(ConsoleMessage.RELOADED,
+                "groups", String.valueOf(groupRegistry.getRegisteredGroups().size()));
 
         sendMessage(sender, configManager.getReloadSuccessMessage());
 

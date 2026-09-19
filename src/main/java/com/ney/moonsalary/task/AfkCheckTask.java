@@ -1,10 +1,9 @@
 package com.ney.moonsalary.task;
 
-import com.ney.moonsalary.MoonSalary;
 import com.ney.moonsalary.config.ConfigManager;
 import com.ney.moonsalary.event.PlayerAfkEvent;
 import com.ney.moonsalary.service.AfkTracker;
-import com.ney.moonsalary.service.MessageService;
+import com.ney.moonsalary.service.EconomyService;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -12,30 +11,32 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Проверка игроков на AFK.
  * <p>
+ * Работает полностью тихо: никаких сообщений, звуков и тайтлов игроку.
+ * Результат проверки влияет только на выдачу зарплаты и на событие
+ * {@link PlayerAfkEvent} для других плагинов, поэтому MoonSalary
+ * не конфликтует с посторонними AFK-плагинами.
+ * <p>
  * Точка отсчёта простоя создаётся при первом обнаружении игрока,
  * поэтому сразу после входа на сервер он не считается AFK.
  */
 public class AfkCheckTask implements Runnable {
 
-    private final MoonSalary plugin;
     private final ConfigManager configManager;
     private final AfkTracker afkTracker;
-    private final MessageService messageService;
+    private final EconomyService economyService;
 
-    public AfkCheckTask(@NotNull MoonSalary plugin,
-                        @NotNull ConfigManager configManager,
+    public AfkCheckTask(@NotNull ConfigManager configManager,
                         @NotNull AfkTracker afkTracker,
-                        @NotNull MessageService messageService) {
-        this.plugin = plugin;
+                        @NotNull EconomyService economyService) {
         this.configManager = configManager;
         this.afkTracker = afkTracker;
-        this.messageService = messageService;
+        this.economyService = economyService;
     }
 
     @Override
     public void run() {
 
-        if (!configManager.isAfkEnabled()) {
+        if (!configManager.isAfkEnabled() || !economyService.isAvailable()) {
             return;
         }
 
@@ -69,27 +70,8 @@ public class AfkCheckTask implements Runnable {
         }
 
         if (afkTracker.markAfk(player)) {
-
-            notifyAfk(player);
             callAfkEvent(player, true, true);
-
         }
-    }
-
-    /**
-     * Уведомляет игрока о переходе в AFK.
-     *
-     * @param player игрок
-     */
-    private void notifyAfk(@NotNull Player player) {
-
-        if (!configManager.areAfkNotificationsEnabled()) {
-            return;
-        }
-
-        messageService.sendAfkWarning(player);
-        messageService.playSound(player, configManager.getAfkSound());
-
     }
 
     private void callAfkEvent(@NotNull Player player, boolean afk, boolean changed) {

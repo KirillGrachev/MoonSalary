@@ -1,7 +1,7 @@
 package com.ney.moonsalary.service;
 
-import com.ney.moonsalary.MoonSalary;
 import com.ney.moonsalary.config.ConfigManager;
+import com.ney.moonsalary.config.type.ConsoleMessage;
 import com.ney.moonsalary.config.type.SoundSettings;
 import com.ney.moonsalary.registry.SalaryGroup;
 import com.ney.moonsalary.util.PlaceholderUtil;
@@ -18,19 +18,22 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class MessageService {
 
-    private final MoonSalary plugin;
     private final ConfigManager configManager;
     private final EconomyService economyService;
+    private final ConsoleService consoleService;
+    private final PayoutSchedule payoutSchedule;
 
     /** Предупреждение об отсутствии PlaceholderAPI выводится один раз */
     private final AtomicBoolean placeholderWarningSent = new AtomicBoolean(false);
 
-    public MessageService(@NotNull MoonSalary plugin,
-                          @NotNull ConfigManager configManager,
-                          @NotNull EconomyService economyService) {
-        this.plugin = plugin;
+    public MessageService(@NotNull ConfigManager configManager,
+                          @NotNull EconomyService economyService,
+                          @NotNull ConsoleService consoleService,
+                          @NotNull PayoutSchedule payoutSchedule) {
         this.configManager = configManager;
         this.economyService = economyService;
+        this.consoleService = consoleService;
+        this.payoutSchedule = payoutSchedule;
     }
 
     /**
@@ -113,40 +116,11 @@ public class MessageService {
                 group != null ? group.getName() : null,
                 configManager.getSalaryIntervalSeconds(),
                 status,
-                group != null ? group.getCommands().size() : 0);
+                group != null ? group.getCommands().size() : 0,
+                resolveNext(context));
 
         return result.replace("{player}", senderName);
 
-    }
-
-    /**
-     * Отправляет сообщение о входе в AFK (с учётом настроек уведомления).
-     *
-     * @param player получатель
-     */
-    public void sendAfkWarning(@NotNull Player player) {
-
-        List<String> messages = configManager.getAfkMessage();
-        String status = configManager.getStatusAfk();
-
-        switch (configManager.getAfkNotifyType()) {
-
-            case CHAT -> sendFormatted(player, messages, null, 0D, status);
-
-            case TITLE -> sendTitle(player, "", joinLines(player, player, messages, status));
-
-            case CHAT_TITLE -> {
-
-                sendFormatted(player, messages, null, 0D, status);
-                sendTitle(player, "", joinLines(player, player, messages, status));
-
-            }
-
-            case NONE -> {
-                // уведомление отключено в конфигурации
-            }
-
-        }
     }
 
     /**
@@ -228,6 +202,23 @@ public class MessageService {
 
     }
 
+    /**
+     * Считает обратный отсчёт до следующей выплаты игрока.
+     *
+     * @param context игрок (может быть null)
+     * @return форматированная длительность или пустая строка
+     */
+    private @NotNull String resolveNext(@Nullable Player context) {
+
+        if (context == null) {
+            return "";
+        }
+
+        return PlaceholderUtil.formatDuration(
+                payoutSchedule.millisUntilNext(context, System.currentTimeMillis()));
+
+    }
+
     private void warnAboutMissingPlaceholders(@NotNull String text) {
 
         if (PlaceholderUtil.isSupported() || !PlaceholderUtil.containsPlaceholders(text)) {
@@ -235,10 +226,7 @@ public class MessageService {
         }
 
         if (placeholderWarningSent.compareAndSet(false, true)) {
-
-            plugin.getLogger().warning("В сообщениях используются плейсхолдеры %...%, "
-                    + "но PlaceholderAPI не установлен - они не будут обработаны.");
-
+            consoleService.log(ConsoleMessage.PLACEHOLDERS_NO_API);
         }
     }
 }

@@ -1,6 +1,8 @@
 package com.ney.moonsalary.command;
 
 import com.ney.moonsalary.MoonSalary;
+import com.ney.moonsalary.config.type.ConsoleMessage;
+import com.ney.moonsalary.service.ConsoleService;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.command.TabExecutor;
 import org.jetbrains.annotations.NotNull;
@@ -11,9 +13,11 @@ import org.jetbrains.annotations.NotNull;
 public class CommandDispatcher {
 
     private final MoonSalary plugin;
+    private final ConsoleService consoleService;
 
-    public CommandDispatcher(@NotNull MoonSalary plugin) {
+    public CommandDispatcher(@NotNull MoonSalary plugin, @NotNull ConsoleService consoleService) {
         this.plugin = plugin;
+        this.consoleService = consoleService;
     }
 
     /**
@@ -28,7 +32,7 @@ public class CommandDispatcher {
 
         if (pluginCommand == null) {
 
-            plugin.getLogger().warning("Команда '" + command + "' не найдена в plugin.yml.");
+            consoleService.log(ConsoleMessage.COMMAND_MISSING, "command", command);
             return;
 
         }

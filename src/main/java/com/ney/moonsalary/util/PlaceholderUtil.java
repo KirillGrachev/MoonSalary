@@ -89,8 +89,9 @@ public class PlaceholderUtil {
      * @param money       сумма выплаты
      * @param group       название группы
      * @param interval    интервал выплаты в секундах
-     * @param status      статус игрока
+     * @param status        статус игрока
      * @param commandsCount количество команд группы
+     * @param next          обратный отсчёт до следующей выплаты
      * @return строка с подставленными значениями
      */
     public static @NotNull String replaceTokens(@NotNull String text,
@@ -99,7 +100,8 @@ public class PlaceholderUtil {
                                                 @Nullable String group,
                                                 long interval,
                                                 @NotNull String status,
-                                                int commandsCount) {
+                                                int commandsCount,
+                                                @NotNull String next) {
 
         return text
                 .replace("{player}", player != null ? player.getName() : "unknown")
@@ -107,7 +109,58 @@ public class PlaceholderUtil {
                 .replace("{group}", group != null ? group : "none")
                 .replace("{interval}", String.valueOf(interval))
                 .replace("{status}", status)
-                .replace("{commands}", String.valueOf(commandsCount));
+                .replace("{commands}", String.valueOf(commandsCount))
+                .replace("{next}", next);
+
+    }
+
+    /**
+     * Форматирует длительность в компактный вид: две старшие ненулевые единицы.
+     * Примеры: 3600000 -> "1h", 3660000 -> "1h 1m", 61000 -> "1m 1s", 5000 -> "5s".
+     *
+     * @param millis длительность в миллисекундах
+     * @return человекочитаемая строка
+     */
+    public static @NotNull String formatDuration(long millis) {
+
+        long totalSeconds = Math.max(0L, millis) / 1000L;
+
+        long days = totalSeconds / 86400L;
+        long hours = totalSeconds % 86400L / 3600L;
+        long minutes = totalSeconds % 3600L / 60L;
+        long seconds = totalSeconds % 60L;
+
+        StringBuilder result = new StringBuilder();
+
+        result = appendUnit(result, days, "d");
+        result = appendUnit(result, hours, "h");
+        result = appendUnit(result, minutes, "m");
+        result = appendUnit(result, seconds, "s");
+
+        if (result.length() == 0) {
+            return "0s";
+        }
+
+        // оставляем две старшие единицы: "1d 3h", "2h 5m", "1m 1s", "1s  " -> trim
+        String[] units = result.toString().trim().split("\s+");
+
+        return units.length > 2 ? units[0] + " " + units[1] : String.join(" ", units);
+
+    }
+
+    private static @NotNull StringBuilder appendUnit(@NotNull StringBuilder builder,
+                                                     long value,
+                                                     @NotNull String unit) {
+
+        if (value == 0L) {
+            return builder;
+        }
+
+        if (builder.length() > 0) {
+            builder.append(' ');
+        }
+
+        return builder.append(value).append(unit);
 
     }
 

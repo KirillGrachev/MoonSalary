@@ -1,6 +1,8 @@
 package com.ney.moonsalary.listener;
 
 import com.ney.moonsalary.MoonSalary;
+import com.ney.moonsalary.config.type.ConsoleMessage;
+import com.ney.moonsalary.service.ConsoleService;
 import com.ney.moonsalary.service.EconomyService;
 import com.ney.moonsalary.task.TaskScheduler;
 import org.bukkit.event.EventHandler;
@@ -21,16 +23,16 @@ public class VaultStateListener implements Listener {
 
     private static final String VAULT_PLUGIN_NAME = "Vault";
 
-    private final MoonSalary plugin;
     private final EconomyService economyService;
     private final TaskScheduler taskScheduler;
+    private final ConsoleService consoleService;
 
     public VaultStateListener(@NotNull MoonSalary plugin,
                               @NotNull EconomyService economyService,
                               @NotNull TaskScheduler taskScheduler) {
-        this.plugin = plugin;
         this.economyService = economyService;
         this.taskScheduler = taskScheduler;
+        this.consoleService = plugin.getConsoleService();
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -43,7 +45,7 @@ public class VaultStateListener implements Listener {
         taskScheduler.stop();
         economyService.shutdown();
 
-        plugin.getLogger().warning("Vault выключен - выдача зарплат приостановлена.");
+        consoleService.log(ConsoleMessage.VAULT_PAUSED);
 
     }
 
@@ -57,7 +59,7 @@ public class VaultStateListener implements Listener {
         if (economyService.setup()) {
 
             taskScheduler.start();
-            plugin.getLogger().info("Vault снова доступен - выдача зарплат возобновлена.");
+            consoleService.log(ConsoleMessage.VAULT_RESUMED);
 
         }
     }

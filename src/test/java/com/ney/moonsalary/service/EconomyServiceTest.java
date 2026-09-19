@@ -40,7 +40,7 @@ class EconomyServiceTest {
         when(plugin.getServer()).thenReturn(server);
         when(plugin.getLogger()).thenReturn(Logger.getAnonymousLogger());
 
-        this.economyService = new EconomyService(plugin);
+        this.economyService = new EconomyService(plugin, new ConsoleService(plugin));
 
     }
 

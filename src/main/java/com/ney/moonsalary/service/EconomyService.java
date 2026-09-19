@@ -1,6 +1,7 @@
 package com.ney.moonsalary.service;
 
 import com.ney.moonsalary.MoonSalary;
+import com.ney.moonsalary.config.type.ConsoleMessage;
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.economy.EconomyResponse;
 import org.bukkit.entity.Player;
@@ -13,10 +14,12 @@ import org.jetbrains.annotations.Nullable;
 public class EconomyService {
 
     private final MoonSalary plugin;
+    private final ConsoleService consoleService;
     private @Nullable Economy economy;
 
-    public EconomyService(@NotNull MoonSalary plugin) {
+    public EconomyService(@NotNull MoonSalary plugin, @NotNull ConsoleService consoleService) {
         this.plugin = plugin;
+        this.consoleService = consoleService;
     }
 
     /**
@@ -38,7 +41,7 @@ public class EconomyService {
 
         this.economy = registration.getProvider();
 
-        plugin.getLogger().info("Экономика подключена: " + economy.getName());
+        consoleService.log(ConsoleMessage.ECONOMY_HOOKED, "provider", economy.getName());
         return true;
 
     }
@@ -71,8 +74,10 @@ public class EconomyService {
 
             if (!response.transactionSuccess()) {
 
-                plugin.getLogger().warning("Не удалось выдать " + amount + " игроку "
-                        + player.getName() + ": " + response.errorMessage);
+                consoleService.log(ConsoleMessage.DEPOSIT_FAILED,
+                        "money", String.valueOf(amount),
+                        "player", player.getName(),
+                        "reason", String.valueOf(response.errorMessage));
                 return false;
 
             }
@@ -81,8 +86,9 @@ public class EconomyService {
 
         } catch (RuntimeException exception) {
 
-            plugin.getLogger().warning("Ошибка экономики при выдаче зарплаты игроку "
-                    + player.getName() + ": " + exception.getMessage());
+            consoleService.log(ConsoleMessage.DEPOSIT_EXCEPTION,
+                    "player", player.getName(),
+                    "reason", String.valueOf(exception.getMessage()));
             return false;
 
         }

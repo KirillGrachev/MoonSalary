@@ -1,8 +1,7 @@
-package com.ney.moonsalary.task;
+package com.ney.moonsalary.service;
 
 import com.ney.moonsalary.config.ConfigManager;
 import com.ney.moonsalary.config.type.AfkState;
-import com.ney.moonsalary.service.AfkTracker;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -17,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class SalaryTaskTest {
+class AfkTrackerTest {
 
     private final UUID playerId = UUID.randomUUID();
 
@@ -41,7 +40,7 @@ class SalaryTaskTest {
         AfkTracker tracker = new AfkTracker(configManager);
         tracker.markAfk(player);
 
-        assertEquals(AfkState.ACTIVE, SalaryTask.resolveAfkState(configManager, tracker, player));
+        assertEquals(AfkState.ACTIVE, tracker.resolveState(player));
 
     }
 
@@ -61,7 +60,7 @@ class SalaryTaskTest {
         tracker.markAfk(player);
 
         assertTrue(tracker.isAfk(player));
-        assertEquals(AfkState.AFK, SalaryTask.resolveAfkState(configManager, tracker, player));
+        assertEquals(AfkState.AFK, tracker.resolveState(player));
 
     }
 
@@ -81,7 +80,7 @@ class SalaryTaskTest {
         tracker.markAfk(player);
 
         assertFalse(tracker.isAfk(player));
-        assertEquals(AfkState.BYPASSED, SalaryTask.resolveAfkState(configManager, tracker, player));
+        assertEquals(AfkState.BYPASSED, tracker.resolveState(player));
 
     }
 
@@ -95,7 +94,7 @@ class SalaryTaskTest {
         Player player = mockPlayer();
         AfkTracker tracker = new AfkTracker(configManager);
 
-        assertEquals(AfkState.ACTIVE, SalaryTask.resolveAfkState(configManager, tracker, player));
+        assertEquals(AfkState.ACTIVE, tracker.resolveState(player));
 
     }
 

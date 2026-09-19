@@ -1,6 +1,7 @@
 package com.ney.moonsalary.listener;
 
 import com.ney.moonsalary.service.AfkTracker;
+import com.ney.moonsalary.service.PayoutSchedule;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -15,15 +16,19 @@ import org.jetbrains.annotations.NotNull;
 public class PlayerConnectionListener implements Listener {
 
     private final AfkTracker afkTracker;
+    private final PayoutSchedule payoutSchedule;
 
-    public PlayerConnectionListener(@NotNull AfkTracker afkTracker) {
+    public PlayerConnectionListener(@NotNull AfkTracker afkTracker,
+                                    @NotNull PayoutSchedule payoutSchedule) {
         this.afkTracker = afkTracker;
+        this.payoutSchedule = payoutSchedule;
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerJoin(@NotNull PlayerJoinEvent event) {
 
         afkTracker.startTracking(event.getPlayer());
+        payoutSchedule.track(event.getPlayer());
 
     }
 
@@ -31,6 +36,7 @@ public class PlayerConnectionListener implements Listener {
     public void onPlayerQuit(@NotNull PlayerQuitEvent event) {
 
         afkTracker.remove(event.getPlayer());
+        payoutSchedule.remove(event.getPlayer());
 
     }
 }

@@ -9,6 +9,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.List;
+
 /**
  * Выдача зарплаты: деньги, команды, сообщения, тайтл и звук.
  */
@@ -52,7 +54,7 @@ public class SalaryPayoutService {
 
         if (afkState == AfkState.AFK) {
 
-            notifyAfk(player);
+            sendBlockedMessage(player, group, amount);
             return false;
 
         }
@@ -141,22 +143,25 @@ public class SalaryPayoutService {
     }
 
     /**
-     * Повторяет AFK-уведомление, если это разрешено конфигурацией.
+     * Отправляет сообщение о заблокированной выплате.
+     * Пустая строка в конфигурации означает полную тишину.
      *
      * @param player игрок в AFK
+     * @param group  группа зарплат
+     * @param amount сумма, которую игрок не получил
      */
-    private void notifyAfk(@NotNull Player player) {
+    private void sendBlockedMessage(@NotNull Player player,
+                                    @NotNull SalaryGroup group,
+                                    double amount) {
 
-        if (!configManager.areAfkNotificationsEnabled()) {
+        String message = configManager.getBlockedAfkMessage();
+
+        if (message.isEmpty()) {
             return;
         }
 
-        if (!configManager.shouldRepeatAfkMessage()) {
-            return;
-        }
-
-        messageService.sendAfkWarning(player);
-        messageService.playSound(player, configManager.getAfkSound());
+        messageService.sendFormatted(player, List.of(message),
+                group, amount, configManager.getStatusAfk());
 
     }
 }
