@@ -72,21 +72,23 @@ public class MessageService {
                               double money,
                               @NotNull String status) {
 
-        boolean prefixApplied = false;
-
         for (String message : messages) {
+            sender.sendMessage(formatLine(context, sender.getName(), message, group, money, status));
+        }
+    }
 
-            String formatted = formatLine(context, sender.getName(), message, group, money, status);
+    /**
+     * Отправляет получателю одну строку с плейсхолдерами (включая {prefix}).
+     *
+     * @param sender получатель
+     * @param text   строка из конфигурации
+     */
+    public void sendLine(@NotNull CommandSender sender, @NotNull String text) {
 
-            if (!prefixApplied && !formatted.isEmpty()) {
+        String formatted = formatLine(null, sender.getName(), text, null, 0D, "");
 
-                formatted = configManager.getMessagePrefix() + formatted;
-                prefixApplied = true;
-
-            }
-
+        if (!formatted.isEmpty()) {
             sender.sendMessage(formatted);
-
         }
     }
 
@@ -119,7 +121,9 @@ public class MessageService {
                 group != null ? group.getCommands().size() : 0,
                 resolveNext(context));
 
-        return result.replace("{player}", senderName);
+        return result
+                .replace("{player}", senderName)
+                .replace("{prefix}", configManager.getMessagePrefix());
 
     }
 

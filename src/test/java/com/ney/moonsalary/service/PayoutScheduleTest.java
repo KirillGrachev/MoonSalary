@@ -117,6 +117,22 @@ class PayoutScheduleTest {
     }
 
     @Test
+    @DisplayName("nearestDeadline возвращает ближайший срок среди онлайна")
+    void nearestDeadlineAmongOnline() {
+
+        Player second = mock(Player.class);
+        when(second.getUniqueId()).thenReturn(UUID.randomUUID());
+
+        payoutSchedule.track(player, NOW);
+        payoutSchedule.track(second, NOW + 60_000L);
+
+        assertEquals(NOW + INTERVAL_MILLIS,
+                payoutSchedule.nearestDeadline(java.util.List.of(player, second)));
+        assertEquals(Long.MAX_VALUE, payoutSchedule.nearestDeadline(java.util.List.of()));
+
+    }
+
+    @Test
     @DisplayName("remove убирает игрока из расписания")
     void removeClearsEntry() {
 

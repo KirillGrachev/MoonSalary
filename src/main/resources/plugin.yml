@@ -13,12 +13,12 @@ commands:
     aliases: [msalary, zp]
 
 permissions:
-  moon_salary.admin.reload:
+  moonsalary.admin.reload:
     description: Allows to reload the plugin configuration
     default: op
-  moon_salary.admin.list:
+  moonsalary.admin.list:
     description: Allows to view all configured salary groups
     default: op
-  moon_salary.bypass.afk:
+  moonsalary.bypass.afk:
     description: Allows to receive a salary while being AFK
     default: false

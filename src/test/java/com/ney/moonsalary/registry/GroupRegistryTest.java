@@ -58,7 +58,7 @@ class GroupRegistryTest {
     void picksHighestPriorityGroup() {
 
         SalaryGroup group = groupRegistry.resolveGroup(
-                List.of("group.default", "group.moon", "moon_salary.bypass.afk"), "group.");
+                List.of("group.default", "group.moon", "moonsalary.bypass.afk"), "group.");
 
         assertEquals("moon", group.getName());
 

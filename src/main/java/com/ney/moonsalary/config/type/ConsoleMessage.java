@@ -14,66 +14,69 @@ import java.util.logging.Level;
 public enum ConsoleMessage {
 
     STARTUP("startup", Level.INFO,
-            "MoonSalary успешно запущен! Групп: {groups}"),
+            "MoonSalary is up and running! Groups: {groups}"),
 
     SHUTDOWN("shutdown", Level.INFO,
-            "MoonSalary остановлен!"),
+            "MoonSalary stopped!"),
 
     DISABLED_BY_CONFIG("disabled_by_config", Level.WARNING,
-            "Плагин выключен в config.yml (settings.enabled: false) - выплаты не производятся."),
+            "The plugin is disabled in config.yml (settings.enabled: false) - no payouts will be made."),
 
     ECONOMY_HOOKED("economy_hooked", Level.INFO,
-            "Экономика подключена: {provider}"),
+            "Economy hooked: {provider}"),
 
     ECONOMY_WAITING("economy_waiting", Level.WARNING,
-            "Экономика не найдена - повторная попытка после завершения запуска сервера."),
+            "Economy not found - retrying after the server startup completes."),
 
     ECONOMY_LATE("economy_late", Level.INFO,
-            "Экономика найдена - MoonSalary полностью включён."),
+            "Economy found - MoonSalary is fully enabled."),
 
     ECONOMY_MISSING("economy_missing", Level.SEVERE,
-            "Плагин не включён: требуются Vault и плагин экономики (EssentialsX, CMI и т.д.). "
-                    + "Установите зависимости и перезапустите сервер."),
+            "MoonSalary could not enable: Vault and an economy plugin (EssentialsX, CMI, etc.) are required. "
+                    + "Install the dependencies and restart the server."),
 
     STARTUP_FAILED("startup_failed", Level.SEVERE,
-            "MoonSalary не смог включиться: {reason} Выплаты и AFK-проверки отключены."),
+            "MoonSalary could not start: {reason} Payouts and AFK checks are disabled."),
 
     VAULT_PAUSED("vault_paused", Level.WARNING,
-            "Vault выключен - выдача зарплат приостановлена."),
+            "Vault was disabled - salary payouts are paused."),
 
     VAULT_RESUMED("vault_resumed", Level.INFO,
-            "Vault снова доступен - выдача зарплат возобновлена."),
+            "Vault is back - salary payouts are resumed."),
 
     RELOADED("reloaded", Level.INFO,
-            "Конфигурация перезагружена. Групп: {groups}"),
+            "Configuration reloaded. Groups: {groups}"),
 
     INVALID_VALUE("invalid_value", Level.WARNING,
-            "Некорректное значение '{path}': {value}. Используется: {defaultValue}."),
+            "Invalid value for '{path}': {value}. Using: {defaultValue}."),
 
     GROUP_NO_SALARY("group_no_salary", Level.WARNING,
-            "Группа '{group}' не имеет поля 'salary' - пропущена."),
+            "Group '{group}' has no 'salary' field - skipped."),
 
     GROUPS_SECTION_MISSING("groups_section_missing", Level.WARNING,
-            "Секция 'groups' не найдена - зарплаты выдаваться не будут."),
+            "Section 'groups' not found - no salaries will be paid."),
 
     GROUPS_EMPTY("groups_empty", Level.WARNING,
-            "Не найдено ни одной группы зарплат."),
+            "No salary groups found."),
 
     UNKNOWN_SOUND("unknown_sound", Level.WARNING,
-            "Неизвестный звук в '{path}'."),
+            "Unknown sound at '{path}'."),
 
     COMMAND_MISSING("command_missing", Level.WARNING,
-            "Команда '{command}' не найдена в plugin.yml."),
+            "Command '{command}' not found in plugin.yml."),
+
+    COMMAND_UNREGISTER_FAILED("command_unregister_failed", Level.WARNING,
+            "Failed to unregister command '{command}': {reason}"),
 
     PLACEHOLDERS_NO_API("placeholders_no_api", Level.WARNING,
-            "В сообщениях используются плейсхолдеры %...%, "
-                    + "но PlaceholderAPI не установлен - они не будут обработаны."),
+            "Messages contain %...% placeholders "
+                    + "but PlaceholderAPI is not installed - they will not be processed."),
 
     DEPOSIT_FAILED("deposit_failed", Level.WARNING,
-            "Не удалось выдать {money} игроку {player}: {reason}"),
+            "Failed to deposit {money} to {player}: {reason}"),
 
     DEPOSIT_EXCEPTION("deposit_exception", Level.WARNING,
-            "Ошибка экономики при выдаче зарплаты игроку {player}: {reason}");
+            "Economy error while paying {player}: {reason}");
 
     private final String key;
     private final Level level;

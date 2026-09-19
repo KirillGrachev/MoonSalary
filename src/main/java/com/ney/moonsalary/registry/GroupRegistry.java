@@ -121,7 +121,4 @@ public class GroupRegistry {
 
     }
 
-    public Collection<String> getRegisteredGroupNames() {
-        return registeredGroups.keySet();
-    }
 }

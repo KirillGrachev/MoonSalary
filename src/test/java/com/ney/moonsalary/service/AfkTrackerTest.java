@@ -51,10 +51,10 @@ class AfkTrackerTest {
         ConfigManager configManager = mock(ConfigManager.class);
         when(configManager.isAfkEnabled()).thenReturn(true);
         when(configManager.arePermissionsEnabled()).thenReturn(true);
-        when(configManager.getPermissionBypassAfk()).thenReturn("moon_salary.bypass.afk");
+        when(configManager.getPermissionBypassAfk()).thenReturn("moonsalary.bypass.afk");
 
         Player player = mockPlayer();
-        when(player.hasPermission("moon_salary.bypass.afk")).thenReturn(false);
+        when(player.hasPermission("moonsalary.bypass.afk")).thenReturn(false);
 
         AfkTracker tracker = new AfkTracker(configManager);
         tracker.markAfk(player);
@@ -71,10 +71,10 @@ class AfkTrackerTest {
         ConfigManager configManager = mock(ConfigManager.class);
         when(configManager.isAfkEnabled()).thenReturn(true);
         when(configManager.arePermissionsEnabled()).thenReturn(true);
-        when(configManager.getPermissionBypassAfk()).thenReturn("moon_salary.bypass.afk");
+        when(configManager.getPermissionBypassAfk()).thenReturn("moonsalary.bypass.afk");
 
         Player player = mockPlayer();
-        when(player.hasPermission("moon_salary.bypass.afk")).thenReturn(true);
+        when(player.hasPermission("moonsalary.bypass.afk")).thenReturn(true);
 
         AfkTracker tracker = new AfkTracker(configManager);
         tracker.markAfk(player);

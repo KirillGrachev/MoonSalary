@@ -40,7 +40,7 @@ class ConsoleServiceTest {
 
         consoleService.log(ConsoleMessage.STARTUP, "groups", "8");
 
-        verify(logger).log(Level.INFO, "MoonSalary успешно запущен! Групп: 8");
+        verify(logger).log(Level.INFO, "MoonSalary is up and running! Groups: 8");
 
     }
 

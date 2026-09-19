@@ -187,7 +187,7 @@ public class SalaryCommand implements TabExecutor {
         String header = configManager.getListHeader()
                 .replace("{count}", String.valueOf(groups.size()));
 
-        sendMessage(sender, header);
+        messageService.sendLine(sender, header);
 
         for (SalaryGroup group : groups) {
 
@@ -196,7 +196,7 @@ public class SalaryCommand implements TabExecutor {
                     .replace("{money}", messageService.formatMoney(group.getSalary()))
                     .replace("{priority}", String.valueOf(group.getPriority()));
 
-            sendMessage(sender, entry);
+            messageService.sendLine(sender, entry);
 
         }
     }
@@ -271,13 +271,7 @@ public class SalaryCommand implements TabExecutor {
     }
 
     private void sendMessage(@NotNull CommandSender sender, @NotNull String message) {
-
-        if (message.isEmpty()) {
-            return;
-        }
-
-        sender.sendMessage(message);
-
+        messageService.sendLine(sender, message);
     }
 
     /**

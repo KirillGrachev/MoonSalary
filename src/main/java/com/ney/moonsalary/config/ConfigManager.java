@@ -154,9 +154,9 @@ public class ConfigManager implements MoonSalaryConfig {
 
         permissionsEnabled = config.getBoolean(PATH_PERMISSIONS_ENABLED, true);
         groupPermissionPrefix = config.getString(PATH_PERMISSION_PREFIX, "group.");
-        permissionBypassAfk = config.getString(PATH_PERMISSION_BYPASS_AFK, "moon_salary.bypass.afk");
-        permissionReload = config.getString(PATH_PERMISSION_RELOAD, "moon_salary.admin.reload");
-        permissionList = config.getString(PATH_PERMISSION_LIST, "moon_salary.admin.list");
+        permissionBypassAfk = config.getString(PATH_PERMISSION_BYPASS_AFK, "moonsalary.bypass.afk");
+        permissionReload = config.getString(PATH_PERMISSION_RELOAD, "moonsalary.admin.reload");
+        permissionList = config.getString(PATH_PERMISSION_LIST, "moonsalary.admin.list");
 
         salarySound = loadSound("settings.sounds.salary",
                 PATH_SOUND_SALARY_ENABLED, PATH_SOUND_SALARY_NAME,

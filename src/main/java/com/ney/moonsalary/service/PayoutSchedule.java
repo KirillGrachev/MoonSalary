@@ -5,6 +5,7 @@ import com.ney.moonsalary.config.type.PayoutMode;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -51,6 +52,29 @@ public class PayoutSchedule {
         }
 
         return Math.max(0L, globalAnchor + intervalMillis() - now);
+
+    }
+
+    /**
+     * Ищет ближайший дедлайн выплаты среди переданных игроков.
+     *
+     * @param onlinePlayers онлайн-игроки для проверки
+     * @return дедлайн или {@link Long#MAX_VALUE}, если дедлайнов нет
+     */
+    public long nearestDeadline(@NotNull Collection<? extends Player> onlinePlayers) {
+
+        long nearest = Long.MAX_VALUE;
+
+        for (Player player : onlinePlayers) {
+
+            Long deadline = nextPayoutAt.get(player.getUniqueId());
+            if (deadline != null && deadline < nearest) {
+                nearest = deadline;
+            }
+
+        }
+
+        return nearest;
 
     }
 

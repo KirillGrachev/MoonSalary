@@ -31,6 +31,7 @@ public final class MoonSalary extends JavaPlugin {
     private PayoutSchedule payoutSchedule;
     private SalaryPayoutService payoutService;
     private TaskScheduler taskScheduler;
+    private CommandDispatcher commandDispatcher;
 
     /** Внутренний сбой при старте: плагин остаётся включённым, но не работает */
     private boolean startupFailed;
@@ -67,6 +68,8 @@ public final class MoonSalary extends JavaPlugin {
                     "reason", String.valueOf(exception.getMessage()));
             getLogger().log(Level.FINE, "Причина сбоя при включении", exception);
 
+            Bukkit.getPluginManager().disablePlugin(this);
+
         }
     }
 
@@ -75,6 +78,10 @@ public final class MoonSalary extends JavaPlugin {
 
         if (taskScheduler != null) {
             taskScheduler.stop();
+        }
+
+        if (commandDispatcher != null) {
+            commandDispatcher.unregisterCommand("salary");
         }
 
         if (afkTracker != null) {
@@ -117,7 +124,7 @@ public final class MoonSalary extends JavaPlugin {
         this.payoutService = new SalaryPayoutService(this, configManager, economyService, messageService);
 
         this.taskScheduler = new TaskScheduler(this, configManager, groupRegistry,
-                afkTracker, economyService, payoutSchedule, messageService, payoutService);
+                afkTracker, economyService, payoutSchedule, payoutService);
 
     }
 
@@ -127,7 +134,7 @@ public final class MoonSalary extends JavaPlugin {
     private void registerListeners() {
 
         new EventDispatcher(this).registerEvents(
-                new PlayerConnectionListener(afkTracker, payoutSchedule),
+                new PlayerConnectionListener(afkTracker, taskScheduler),
                 new VaultStateListener(this, economyService, taskScheduler)
         );
 
@@ -138,7 +145,9 @@ public final class MoonSalary extends JavaPlugin {
      */
     private void registerCommands() {
 
-        new CommandDispatcher(this, consoleService).registerCommand("salary",
+        this.commandDispatcher = new CommandDispatcher(this, consoleService);
+
+        commandDispatcher.registerCommand("salary",
                 new SalaryCommand(this, configManager, groupRegistry,
                         afkTracker, messageService, taskScheduler)
         );
@@ -147,8 +156,9 @@ public final class MoonSalary extends JavaPlugin {
 
     /**
      * Повторяет попытку подключения экономики после полного старта сервера.
-     * Если экономики всё ещё нет - плагин остаётся в режиме ожидания:
-     * задачи не запущены, команда /salary объясняет причину.
+     * Если экономики всё ещё нет - плагин отключается: без экономики
+     * salary-плагин не работоспособен, а команда /salary вырегиструется,
+     * чтобы не оставаться «зомби» у выключенного плагина.
      */
     private void retryEconomyHook() {
 
@@ -161,6 +171,7 @@ public final class MoonSalary extends JavaPlugin {
         }
 
         consoleService.log(ConsoleMessage.ECONOMY_MISSING);
+        Bukkit.getPluginManager().disablePlugin(this);
 
     }
 
@@ -196,23 +207,4 @@ public final class MoonSalary extends JavaPlugin {
         return groupRegistry;
     }
 
-    public MessageService getMessageService() {
-        return messageService;
-    }
-
-    public AfkTracker getAfkTracker() {
-        return afkTracker;
-    }
-
-    public PayoutSchedule getPayoutSchedule() {
-        return payoutSchedule;
-    }
-
-    public SalaryPayoutService getPayoutService() {
-        return payoutService;
-    }
-
-    public EconomyService getEconomyService() {
-        return economyService;
-    }
 }
