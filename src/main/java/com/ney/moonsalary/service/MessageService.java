@@ -26,6 +26,9 @@ public class MessageService {
     /** Предупреждение об отсутствии PlaceholderAPI выводится один раз */
     private final AtomicBoolean placeholderWarningSent = new AtomicBoolean(false);
 
+    /** Предупреждение о невалидном паттерне времени выводится один раз */
+    private final AtomicBoolean invalidTimePatternWarningSent = new AtomicBoolean(false);
+
     public MessageService(@NotNull ConfigManager configManager,
                           @NotNull EconomyService economyService,
                           @NotNull ConsoleService consoleService,
@@ -113,6 +116,9 @@ public class MessageService {
         String result = PlaceholderUtil.applyPlaceholders(context, text);
 
         warnAboutMissingPlaceholders(result);
+
+        result = PlaceholderUtil.applyServerTime(result);
+        warnAboutInvalidTimePattern(result);
 
         result = PlaceholderUtil.replaceTokens(result, context, money,
                 group != null ? group.getName() : null,
@@ -221,6 +227,23 @@ public class MessageService {
         return PlaceholderUtil.formatDuration(
                 payoutSchedule.millisUntilNext(context, System.currentTimeMillis()));
 
+    }
+
+    private void warnAboutInvalidTimePattern(@NotNull String text) {
+
+        if (!PlaceholderUtil.hasUnresolvedServerTime(text)) {
+            return;
+        }
+
+        if (invalidTimePatternWarningSent.compareAndSet(false, true)) {
+
+            int start = text.indexOf("{servertime_");
+            int end = text.indexOf('}', start);
+
+            consoleService.log(ConsoleMessage.INVALID_TIME_PATTERN,
+                    "token", text.substring(start, end != -1 ? end + 1 : text.length()));
+
+        }
     }
 
     private void warnAboutMissingPlaceholders(@NotNull String text) {

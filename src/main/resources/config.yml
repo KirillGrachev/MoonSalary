@@ -110,6 +110,8 @@ messages:
       no_group: "&cgroup not found"
 
 # Placeholders: {money}, {player}, {group}, {interval}, {status}, {commands}, {next}, {prefix}
+# Built-in server time: {servertime_<pattern>} with Java DateTimeFormatter syntax
+# (for example {servertime_HH:mm} or {servertime_dd/MM/yy}) - no PlaceholderAPI needed
 # {prefix} is inserted only where the template asks for it - no automatic prefixing
 # {next} - countdown to the next payout (personal timer or the nearest payday)
 # HEX colors are supported: #42fffc text
@@ -123,7 +125,7 @@ groups: # Group name = permission (prefix + name), for example: group.vip
       - '&f&6╔ &fThe salary hour has come!'
       - '&f&6╚ &fYou received &e{money} ⛂'
       - ''
-      - '  &e⌛ %servertime_HH:mm% %servertime_dd/MM/yy%'
+      - '  &e⌛ {servertime_HH:mm} {servertime_dd/MM/yy}'
       - ''
 
   vip: # Example of a donation group
@@ -134,7 +136,7 @@ groups: # Group name = permission (prefix + name), for example: group.vip
       - '&f&6╔ &fThe salary hour has come!'
       - '&f&6╚ &fYou received &e{money} ⛂'
       - ''
-      - '  &e⌛ %servertime_HH:mm% %servertime_dd/MM/yy%'
+      - '  &e⌛ {servertime_HH:mm} {servertime_dd/MM/yy}'
       - ''
 
   premium:
@@ -145,7 +147,7 @@ groups: # Group name = permission (prefix + name), for example: group.vip
       - '&f&6╔ &fThe salary hour has come!'
       - '&f&6╚ &fYou received &e{money} ⛂'
       - ''
-      - '  &e⌛ %servertime_HH:mm% %servertime_dd/MM/yy%'
+      - '  &e⌛ {servertime_HH:mm} {servertime_dd/MM/yy}'
       - ''
 
   legend:
@@ -156,7 +158,7 @@ groups: # Group name = permission (prefix + name), for example: group.vip
       - '&f&6╔ &fThe salary hour has come!'
       - '&f&6╚ &fYou received &e{money} ⛂'
       - ''
-      - '  &e⌛ %servertime_HH:mm% %servertime_dd/MM/yy%'
+      - '  &e⌛ {servertime_HH:mm} {servertime_dd/MM/yy}'
       - ''
 
   media: # Group with an extra command on payout
@@ -169,7 +171,7 @@ groups: # Group name = permission (prefix + name), for example: group.vip
       - '&f&6╔ &fThe salary hour has come!'
       - '&f&6╚ &fYou received &e{money} ⛂'
       - ''
-      - '  &e⌛ %servertime_HH:mm% %servertime_dd/MM/yy%'
+      - '  &e⌛ {servertime_HH:mm} {servertime_dd/MM/yy}'
       - ''
 
   helper: # Staff group
@@ -180,7 +182,7 @@ groups: # Group name = permission (prefix + name), for example: group.vip
       - '&f&6╔ &fThe salary hour has come!'
       - '&f&6╚ &fYou received &e{money} ⛂'
       - ''
-      - '  &e⌛ %servertime_HH:mm% %servertime_dd/MM/yy%'
+      - '  &e⌛ {servertime_HH:mm} {servertime_dd/MM/yy}'
       - ''
 
   moderator: # Several commands at once
@@ -194,7 +196,7 @@ groups: # Group name = permission (prefix + name), for example: group.vip
       - '&f&6╔ &fThe salary hour has come!'
       - '&f&6╚ &fYou received &e{money} ⛂'
       - ''
-      - '  &e⌛ %servertime_HH:mm% %servertime_dd/MM/yy%'
+      - '  &e⌛ {servertime_HH:mm} {servertime_dd/MM/yy}'
       - ''
 
   admin: # The highest priority - wins if the player has several groups
@@ -207,5 +209,5 @@ groups: # Group name = permission (prefix + name), for example: group.vip
       - '&f&6╔ &fThe salary hour has come!'
       - '&f&6╚ &fYou received &e{money} ⛂'
       - ''
-      - '  &e⌛ %servertime_HH:mm% %servertime_dd/MM/yy%'
+      - '  &e⌛ {servertime_HH:mm} {servertime_dd/MM/yy}'
       - ''

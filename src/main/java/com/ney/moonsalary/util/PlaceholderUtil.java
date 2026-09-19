@@ -5,6 +5,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Method;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Утилита для работы с PlaceholderAPI.
@@ -37,8 +41,61 @@ public class PlaceholderUtil {
 
     }
 
+    private static final Pattern SERVERTIME_PATTERN = Pattern.compile("\\{servertime_([^}]+)}");
+
     private PlaceholderUtil() {
 
+    }
+
+    /**
+     * Подставляет встроенное время сервера: {servertime_<pattern>},
+     * где pattern - формат Java DateTimeFormatter (HH:mm, dd/MM/yy и т.д.).
+     * PlaceholderAPI и его экспаншены для этого не нужны.
+     *
+     * @param text исходная строка
+     * @return строка с подставленным временем; невалидный токен остаётся как есть
+     */
+    public static @NotNull String applyServerTime(@NotNull String text) {
+
+        if (!text.contains("{servertime_")) {
+            return text;
+        }
+
+        Matcher matcher = SERVERTIME_PATTERN.matcher(text);
+        StringBuilder result = new StringBuilder();
+
+        while (matcher.find()) {
+
+            String formatted = formatServerTime(matcher.group(1));
+
+            matcher.appendReplacement(result,
+                    Matcher.quoteReplacement(formatted != null ? formatted : matcher.group()));
+
+        }
+
+        matcher.appendTail(result);
+        return result.toString();
+
+    }
+
+    /**
+     * Проверяет, остались ли неразобранные токены {servertime_...}
+     * (признак невалидного паттерна).
+     *
+     * @param text строка после applyServerTime
+     * @return true если токен не разобрался
+     */
+    public static boolean hasUnresolvedServerTime(@NotNull String text) {
+        return text.contains("{servertime_");
+    }
+
+    private static @Nullable String formatServerTime(@NotNull String pattern) {
+
+        try {
+            return DateTimeFormatter.ofPattern(pattern).format(LocalDateTime.now());
+        } catch (IllegalArgumentException exception) {
+            return null;
+        }
     }
 
     /**

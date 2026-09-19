@@ -86,6 +86,30 @@ class HexColorUtilTest {
     }
 
     @Test
+    @DisplayName("Встроенное время сервера подставляется без PlaceholderAPI")
+    void appliesServerTime() {
+
+        String result = PlaceholderUtil.applyServerTime("time: {servertime_HH:mm}");
+
+        assertTrue(result.matches("time: \\d{2}:\\d{2}"));
+        assertEquals("no tokens", PlaceholderUtil.applyServerTime("no tokens"));
+
+    }
+
+    @Test
+    @DisplayName("Невалидный паттерн времени остаётся как есть")
+    void keepsInvalidServerTimePattern() {
+
+        String token = "{servertime_'}";
+
+        assertEquals(token, PlaceholderUtil.applyServerTime(token));
+        assertTrue(PlaceholderUtil.hasUnresolvedServerTime(token));
+        assertFalse(PlaceholderUtil.hasUnresolvedServerTime(
+                PlaceholderUtil.applyServerTime("{servertime_HH:mm} x")));
+
+    }
+
+    @Test
     @DisplayName("Внутренние плейсхолдеры подставляются в строку")
     void replacesTokens() {
 

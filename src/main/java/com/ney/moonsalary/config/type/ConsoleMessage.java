@@ -71,6 +71,9 @@ public enum ConsoleMessage {
     COMMAND_UNREGISTER_FAILED("command_unregister_failed", Level.WARNING,
             "Failed to unregister command '{command}': {reason}"),
 
+    INVALID_TIME_PATTERN("invalid_time_pattern", Level.WARNING,
+            "Invalid servertime pattern in messages - token left unchanged: {token}"),
+
     PLACEHOLDERS_NO_API("placeholders_no_api", Level.WARNING,
             "Messages contain %...% placeholders "
                     + "but PlaceholderAPI is not installed - they will not be processed."),
