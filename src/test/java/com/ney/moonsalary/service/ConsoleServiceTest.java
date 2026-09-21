@@ -69,8 +69,8 @@ class ConsoleServiceTest {
     }
 
     @Test
-    @DisplayName("{prefix} подставляется, цветовые коды в консоль не попадают")
-    void substitutesPrefixAndStripsColors() {
+    @DisplayName("{prefix} подставляется, цветовые коды сохраняются")
+    void substitutesPrefixAndKeepsColors() {
 
         ConfigManager configManager = mock(ConfigManager.class);
         when(configManager.areConsoleMessagesEnabled()).thenReturn(true);
@@ -81,7 +81,24 @@ class ConsoleServiceTest {
         consoleService.attach(configManager);
         consoleService.log(ConsoleMessage.STARTUP, "groups", "4");
 
-        verify(logger).log(Level.INFO, "ML \u00BB Up and running: 4 groups");
+        verify(logger).log(Level.INFO,
+                "\u00A7b\u00A7lM\u00A79\u00A7lL \u00A77\u00BB \u00A7fUp and running: 4 groups");
+
+    }
+
+    @Test
+    @DisplayName("&-коды в консольных шаблонах преобразуются как в чате")
+    void translatesColorCodes() {
+
+        ConfigManager configManager = mock(ConfigManager.class);
+        when(configManager.areConsoleMessagesEnabled()).thenReturn(true);
+        when(configManager.getConsoleMessage("startup", ConsoleMessage.STARTUP.getFallback()))
+                .thenReturn("&aGreen start: {groups}");
+
+        consoleService.attach(configManager);
+        consoleService.log(ConsoleMessage.STARTUP, "groups", "2");
+
+        verify(logger).log(Level.INFO, "\u00A7aGreen start: 2");
 
     }
 

@@ -3,7 +3,7 @@ package com.ney.moonsalary.service;
 import com.ney.moonsalary.MoonSalary;
 import com.ney.moonsalary.config.ConfigManager;
 import com.ney.moonsalary.config.type.ConsoleMessage;
-import org.bukkit.ChatColor;
+import com.ney.moonsalary.util.HexColorUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -35,8 +35,8 @@ public class ConsoleService {
     /**
      * Выводит сообщение в консоль.
      * <p>
-     * Поддерживает {prefix} в шаблоне; цветовые коды перед выводом снимаются,
-     * чтобы в консоль не уходили §-последовательности.
+     * Шаблоны могут использовать {prefix} и цветовые коды (& и HEX): они преобразуются
+     * как в чате и передаются в лог - современные консоли отображают их самостоятельно.
      *
      * @param message тип сообщения
      * @param tokens  пары "имя плейсхолдера", "значение"
@@ -51,10 +51,10 @@ public class ConsoleService {
                 ? configManager.getConsoleMessage(message.getKey(), message.getFallback())
                 : message.getFallback();
 
-        String formatted = applyTokens(template, tokens)
-                .replace("{prefix}", resolvePrefix());
+        String formatted = HexColorUtil.color(
+                applyTokens(template, tokens).replace("{prefix}", resolvePrefix()));
 
-        plugin.getLogger().log(message.getLevel(), ChatColor.stripColor(formatted));
+        plugin.getLogger().log(message.getLevel(), formatted);
 
     }
 
