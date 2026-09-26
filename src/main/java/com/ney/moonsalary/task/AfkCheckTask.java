@@ -1,9 +1,9 @@
 package com.ney.moonsalary.task;
 
-import com.ney.moonsalary.config.ConfigManager;
+import com.ney.moonsalary.config.MoonSalaryConfig;
 import com.ney.moonsalary.event.PlayerAfkEvent;
 import com.ney.moonsalary.service.AfkTracker;
-import com.ney.moonsalary.service.EconomyService;
+import com.ney.moonsalary.service.PayoutSchedule;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -16,33 +16,40 @@ import org.jetbrains.annotations.NotNull;
  * {@link PlayerAfkEvent} для других плагинов, поэтому MoonSalary
  * не конфликтует с посторонними AFK-плагинами.
  * <p>
+ * Трекинг не зависит от доступности экономики: AFK-состояние - факт об
+ * игроке, а не о выплатах. Когда экономика на паузе, задачи плагина
+ * остановлены целиком, и проверка просто не выполняется.
+ * <p>
  * Точка отсчёта простоя создаётся при первом обнаружении игрока,
  * поэтому сразу после входа на сервер он не считается AFK.
  */
 public class AfkCheckTask implements Runnable {
 
-    private final ConfigManager configManager;
+    private final MoonSalaryConfig configManager;
     private final AfkTracker afkTracker;
-    private final EconomyService economyService;
+    private final PayoutSchedule payoutSchedule;
 
-    public AfkCheckTask(@NotNull ConfigManager configManager,
+    public AfkCheckTask(@NotNull MoonSalaryConfig configManager,
                         @NotNull AfkTracker afkTracker,
-                        @NotNull EconomyService economyService) {
+                        @NotNull PayoutSchedule payoutSchedule) {
+
         this.configManager = configManager;
         this.afkTracker = afkTracker;
-        this.economyService = economyService;
+        this.payoutSchedule = payoutSchedule;
+
     }
 
     @Override
     public void run() {
 
-        if (!configManager.isAfkEnabled() || !economyService.isAvailable()) {
+        if (!configManager.isAfkEnabled()) {
             return;
         }
 
         for (Player player : Bukkit.getOnlinePlayers()) {
             checkPlayer(player);
         }
+
     }
 
     /**
@@ -52,35 +59,25 @@ public class AfkCheckTask implements Runnable {
      */
     private void checkPlayer(@NotNull Player player) {
 
-        if (afkTracker.hasMoved(player)) {
+        Boolean becameAfk = afkTracker.processCheck(player,
+                configManager.getAfkCheckIntervalTicks());
 
-            boolean wasAfk = afkTracker.markActive(player);
+        if (becameAfk != null) {
 
-            afkTracker.startTracking(player);
-            callAfkEvent(player, false, wasAfk);
+            // переходы AFK управляют паузой персонального окна:
+            // время простоя не приближает выплату
+            long now = payoutSchedule.currentTicks();
 
-            return;
+            if (becameAfk) {
+                payoutSchedule.startAfkPause(player, now);
+            } else {
+                payoutSchedule.endAfkPause(player, now);
+            }
+
+            Bukkit.getPluginManager().callEvent(new PlayerAfkEvent(player, becameAfk));
 
         }
 
-        afkTracker.startTracking(player);
-
-        if (!afkTracker.isIdleTooLong(player)) {
-            return;
-        }
-
-        if (afkTracker.markAfk(player)) {
-            callAfkEvent(player, true, true);
-        }
     }
 
-    private void callAfkEvent(@NotNull Player player, boolean afk, boolean changed) {
-
-        if (!changed) {
-            return;
-        }
-
-        Bukkit.getPluginManager().callEvent(new PlayerAfkEvent(player, afk));
-
-    }
 }

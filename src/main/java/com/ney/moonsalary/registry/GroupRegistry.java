@@ -1,6 +1,6 @@
 package com.ney.moonsalary.registry;
 
-import com.ney.moonsalary.config.ConfigManager;
+import com.ney.moonsalary.config.MoonSalaryConfig;
 import com.ney.moonsalary.config.type.SalaryGroupSettings;
 import org.bukkit.entity.Player;
 import org.bukkit.permissions.PermissionAttachmentInfo;
@@ -9,30 +9,44 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Objects;
 
+/**
+ * Реестр групп зарплат.
+ * <p>
+ * Все вызовы из основного потока сервера. reload собирает новую карту
+ * и подменяет ссылку одной операцией: читатели никогда не видят
+ * наполовину заполненный реестр.
+ */
 public class GroupRegistry {
 
-    private final ConfigManager configManager;
-    private final Map<String, SalaryGroup> registeredGroups = new ConcurrentHashMap<>();
+    private final MoonSalaryConfig configManager;
 
-    public GroupRegistry(ConfigManager configManager) {
+    private Map<String, SalaryGroup> registeredGroups = new HashMap<>();
+
+    public GroupRegistry(@NotNull MoonSalaryConfig configManager) {
         this.configManager = configManager;
-        initializeRegisteredGroups();
+        this.registeredGroups = buildRegistry();
     }
 
-    private void initializeRegisteredGroups() {
-        configManager.getGroups().forEach(this::registerGroup);
-    }
+    private @NotNull Map<String, SalaryGroup> buildRegistry() {
 
-    private void registerGroup(@NotNull SalaryGroupSettings settings) {
-        registeredGroups.put(normalizeGroupName(settings.name()), new SalaryGroup(settings));
+        Map<String, SalaryGroup> rebuilt = new HashMap<>();
+
+        for (SalaryGroupSettings settings : configManager.getGroups()) {
+            rebuilt.put(normalizeGroupName(settings.name()), new SalaryGroup(settings));
+        }
+
+        return rebuilt;
+
     }
 
     private @NotNull String normalizeGroupName(@NotNull String name) {
-        return name.toLowerCase();
+        return name.toLowerCase(Locale.ROOT);
     }
 
     /**
@@ -66,7 +80,6 @@ public class GroupRegistry {
                 .toList();
 
         SalaryGroup group = resolveGroup(permissions, configManager.getGroupPermissionPrefix());
-
         return group != null ? group : getFallbackGroup();
 
     }
@@ -98,14 +111,12 @@ public class GroupRegistry {
      */
     public @Nullable SalaryGroup resolveGroup(@NotNull Collection<String> permissions,
                                               @NotNull String prefix) {
-
         return permissions.stream()
                 .filter(permission -> permission.startsWith(prefix))
                 .map(permission -> getGroup(permission.substring(prefix.length())))
-                .filter(group -> group != null)
+                .filter(Objects::nonNull)
                 .max(Comparator.comparingInt(SalaryGroup::getPriority))
                 .orElse(null);
-
     }
 
     /**
@@ -119,12 +130,14 @@ public class GroupRegistry {
     }
 
     public void clearRegisteredGroups() {
-        registeredGroups.clear();
+        registeredGroups = new HashMap<>();
     }
 
+    /**
+     * Пересобирает реестр из конфигурации атомарной подменой карты.
+     */
     public void reloadRegistry() {
-        clearRegisteredGroups();
-        initializeRegisteredGroups();
+        registeredGroups = buildRegistry();
     }
 
     /**
@@ -133,12 +146,10 @@ public class GroupRegistry {
      * @return отсортированный список групп
      */
     public @NotNull List<SalaryGroup> getRegisteredGroups() {
-
         return registeredGroups.values().stream()
                 .sorted(Comparator.comparingInt(SalaryGroup::getPriority)
                         .thenComparing(SalaryGroup::getName))
                 .toList();
-
     }
 
 }

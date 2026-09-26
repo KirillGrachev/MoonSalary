@@ -25,13 +25,11 @@ class GroupRegistryTest {
     void setUp() {
 
         ConfigManager configManager = mock(ConfigManager.class);
-
         when(configManager.getGroups()).thenReturn(List.of(
                 new SalaryGroupSettings("default", 100D, 0, List.of(), List.of()),
                 new SalaryGroupSettings("moon", 900D, 7, List.of(), List.of()),
                 new SalaryGroupSettings("staff", 500D, 21, List.of(), List.of("p give {player} 25"))
         ));
-
         this.groupRegistry = new GroupRegistry(configManager);
 
     }
@@ -59,40 +57,32 @@ class GroupRegistryTest {
     @Test
     @DisplayName("Выбирается группа с наивысшим приоритетом")
     void picksHighestPriorityGroup() {
-
         SalaryGroup group = groupRegistry.resolveGroup(
                 List.of("group.default", "group.moon", "moonsalary.bypass.afk"), "group.");
 
         assertEquals("moon", group.getName());
-
     }
 
     @Test
     @DisplayName("Права без префикса группы игнорируются")
     void ignoresForeignPermissions() {
-
         assertNull(groupRegistry.resolveGroup(List.of("essentials.fly", "moon"), "group."));
-
     }
 
     @Test
     @DisplayName("Незарегистрированная группа в правах игнорируется")
     void ignoresUnknownGroupPermission() {
-
         SalaryGroup group = groupRegistry.resolveGroup(List.of("group.hero", "group.default"), "group.");
 
         assertEquals("default", group.getName());
-
     }
 
     @Test
     @DisplayName("Настраиваемый префикс права работает")
     void supportsCustomPrefix() {
-
         SalaryGroup group = groupRegistry.resolveGroup(List.of("rank.staff"), "rank.");
 
         assertEquals("staff", group.getName());
-
     }
 
     @Test
@@ -100,16 +90,13 @@ class GroupRegistryTest {
     void fallsBackToDefaultGroup() {
 
         ConfigManager withFallback = mock(ConfigManager.class);
-
         when(withFallback.getGroups()).thenReturn(List.of(
                 new SalaryGroupSettings("default", 100D, 0, List.of(), List.of()),
                 new SalaryGroupSettings("moon", 900D, 7, List.of(), List.of())
         ));
         when(withFallback.getFallbackGroup()).thenReturn("default");
         when(withFallback.getGroupPermissionPrefix()).thenReturn("group.");
-
         GroupRegistry registry = new GroupRegistry(withFallback);
-
         Player player = mock(Player.class);
         when(player.getEffectivePermissions()).thenReturn(Set.of());
 
@@ -122,20 +109,16 @@ class GroupRegistryTest {
     void groupPermissionWinsOverFallback() {
 
         ConfigManager withFallback = mock(ConfigManager.class);
-
         when(withFallback.getGroups()).thenReturn(List.of(
                 new SalaryGroupSettings("default", 100D, 0, List.of(), List.of()),
                 new SalaryGroupSettings("moon", 900D, 7, List.of(), List.of())
         ));
         when(withFallback.getFallbackGroup()).thenReturn("default");
         when(withFallback.getGroupPermissionPrefix()).thenReturn("group.");
-
         GroupRegistry registry = new GroupRegistry(withFallback);
-
         PermissionAttachmentInfo info = mock(PermissionAttachmentInfo.class);
         when(info.getPermission()).thenReturn("group.moon");
         when(info.getValue()).thenReturn(true);
-
         Player player = mock(Player.class);
         when(player.getEffectivePermissions()).thenReturn(Set.of(info));
 
@@ -148,15 +131,12 @@ class GroupRegistryTest {
     void emptyFallbackDisablesPayoutWithoutPermissions() {
 
         ConfigManager withoutFallback = mock(ConfigManager.class);
-
         when(withoutFallback.getGroups()).thenReturn(List.of(
                 new SalaryGroupSettings("default", 100D, 0, List.of(), List.of())
         ));
         when(withoutFallback.getFallbackGroup()).thenReturn("");
         when(withoutFallback.getGroupPermissionPrefix()).thenReturn("group.");
-
         GroupRegistry registry = new GroupRegistry(withoutFallback);
-
         Player player = mock(Player.class);
         when(player.getEffectivePermissions()).thenReturn(Set.of());
 
@@ -167,22 +147,19 @@ class GroupRegistryTest {
     @Test
     @DisplayName("Список групп отсортирован по приоритету")
     void sortsGroupsByPriority() {
-
         List<String> names = groupRegistry.getRegisteredGroups().stream()
                 .map(SalaryGroup::getName)
                 .toList();
 
         assertEquals(List.of("default", "moon", "staff"), names);
-
     }
 
     @Test
     @DisplayName("reloadRegistry пересоздаёт реестр")
     void reloadsRegistry() {
-
         groupRegistry.reloadRegistry();
 
         assertEquals(3, groupRegistry.getRegisteredGroups().size());
-
     }
+
 }

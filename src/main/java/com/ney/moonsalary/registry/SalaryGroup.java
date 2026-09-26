@@ -54,4 +54,5 @@ public class SalaryGroup {
     public boolean hasMessages() {
         return !messages.isEmpty();
     }
+
 }

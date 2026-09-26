@@ -18,5 +18,4 @@ public record SalaryGroupSettings(@NotNull String name,
                                   int priority,
                                   @NotNull List<String> messages,
                                   @NotNull List<String> commands) {
-
 }

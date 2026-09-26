@@ -3,11 +3,16 @@ package com.ney.moonsalary.config;
 import com.ney.moonsalary.config.type.PayoutMode;
 import com.ney.moonsalary.config.type.SalaryGroupSettings;
 import com.ney.moonsalary.config.type.SoundSettings;
+import com.ney.moonsalary.config.type.StorageSettings;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
 /**
  * Контракт конфигурации плагина MoonSalary.
+ * <p>
+ * Сервисы зависят от этого интерфейса, а не от конкретной реализации:
+ * поведение конфигурации можно подменить в тестах.
  */
 public interface MoonSalaryConfig {
 
@@ -27,9 +32,17 @@ public interface MoonSalaryConfig {
 
     boolean arePermissionsEnabled();
 
-    PayoutMode getPayoutMode();
+    @NotNull PayoutMode getPayoutMode();
 
-    String getFallbackGroup();
+    /**
+     * PERSONAL-режим: не считать AFK-время в отсчёте до выплаты -
+     * дедлайн ставится на паузу, пока игрок помечен AFK.
+     *
+     * @return true если простой в AFK не приближает выплату
+     */
+    boolean isPayoutPausedWhileAfk();
+
+    @NotNull String getFallbackGroup();
 
     long getSalaryIntervalTicks();
 
@@ -47,52 +60,78 @@ public interface MoonSalaryConfig {
 
     int getTitleFadeOut();
 
-    SoundSettings getSalarySound();
+    @NotNull SoundSettings getSalarySound();
 
-    String getGroupPermissionPrefix();
+    @NotNull String getGroupPermissionPrefix();
 
-    String getPermissionBypassAfk();
+    @NotNull String getPermissionBypassAfk();
 
-    String getPermissionReload();
+    @NotNull String getPermissionReload();
 
-    String getPermissionList();
+    @NotNull String getPermissionList();
 
-    String getMessagePrefix();
+    @NotNull String getPermissionInfo();
 
-    String getSalaryTitle();
+    @NotNull String getPermissionGive();
 
-    String getSalarySubtitle();
+    @NotNull StorageSettings getStorageSettings();
 
-    String getBlockedAfkMessage();
+    boolean isDownloadLibrariesEnabled();
 
-    List<String> getInfoSelfMessage();
+    /**
+     * Сколько записей истории выплат хранить на игрока (0 - история выключена).
+     *
+     * @return лимит записей
+     */
+    int getHistoryLimit();
 
-    List<String> getInfoOtherMessage();
+    @NotNull String getMessagePrefix();
 
-    String getListHeader();
+    @NotNull String getSalaryTitle();
 
-    String getListEntry();
+    @NotNull String getSalarySubtitle();
 
-    String getListEmpty();
+    @NotNull String getBlockedAfkMessage();
 
-    String getStatusOnline();
+    @NotNull List<String> getInfoSelfMessage();
 
-    String getStatusAfk();
+    @NotNull List<String> getInfoOtherMessage();
 
-    String getStatusOffline();
+    @NotNull String getListHeader();
 
-    String getStatusNoGroup();
+    @NotNull String getListEntry();
 
-    String getNoPermissionMessage();
+    @NotNull String getListEmpty();
 
-    String getUsageMessage();
+    @NotNull String getStatusOnline();
 
-    String getUnknownPlayerMessage();
+    @NotNull String getStatusAfk();
 
-    String getReloadSuccessMessage();
+    @NotNull String getStatusNoGroup();
 
-    String getStartupFailedMessage();
+    /**
+     * Текст для {last_payout}, когда истории выплат ещё нет.
+     *
+     * @return строка статуса
+     */
+    @NotNull String getStatusNoPayout();
 
-    List<SalaryGroupSettings> getGroups();
+    @NotNull String getNoPermissionMessage();
+
+    @NotNull String getUsageMessage();
+
+    @NotNull String getUnknownPlayerMessage();
+
+    @NotNull String getReloadSuccessMessage();
+
+    @NotNull String getGiveUsageMessage();
+
+    @NotNull String getGiveSuccessMessage();
+
+    @NotNull String getGiveFailedMessage();
+
+    @NotNull String getGiveUnknownGroupMessage();
+
+    @NotNull List<SalaryGroupSettings> getGroups();
 
 }

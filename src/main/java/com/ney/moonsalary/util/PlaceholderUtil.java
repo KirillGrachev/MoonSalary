@@ -7,11 +7,13 @@ import org.jetbrains.annotations.Nullable;
 import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Утилита для работы с PlaceholderAPI.
+ * Утилита для работы с PlaceholderAPI и внутренними плейсхолдерами.
  * <p>
  * PlaceholderAPI подключается через рефлексию, поэтому плагин
  * не требует его наличия на сервере (soft-зависимость).
@@ -27,11 +29,9 @@ public class PlaceholderUtil {
         Method setPlaceholdersMethod = null;
 
         try {
-
             apiClass = Class.forName("me.clip.placeholderapi.PlaceholderAPI");
             setPlaceholdersMethod = apiClass.getMethod("setPlaceholders",
                     org.bukkit.OfflinePlayer.class, String.class);
-
         } catch (ClassNotFoundException | NoSuchMethodException ignored) {
             // PlaceholderAPI не установлен - плейсхолдеры не обрабатываются
         }
@@ -43,8 +43,14 @@ public class PlaceholderUtil {
 
     private static final Pattern SERVERTIME_PATTERN = Pattern.compile("\\{servertime_([^}]+)}");
 
-    private PlaceholderUtil() {
+    /**
+     * Плейсхолдер PlaceholderAPI: %идентификатор% без пробелов и вложенных '%'.
+     * Точный поиск пары символов '%' давал бы ложные срабатывания на обычном
+     * тексте вроде "скидка 10% + налог 5%".
+     */
+    private static final Pattern PAPI_PLACEHOLDER_PATTERN = Pattern.compile("%[^%\\s]+%");
 
+    private PlaceholderUtil() {
     }
 
     /**
@@ -65,12 +71,9 @@ public class PlaceholderUtil {
         StringBuilder result = new StringBuilder();
 
         while (matcher.find()) {
-
             String formatted = formatServerTime(matcher.group(1));
-
             matcher.appendReplacement(result,
                     Matcher.quoteReplacement(formatted != null ? formatted : matcher.group()));
-
         }
 
         matcher.appendTail(result);
@@ -90,7 +93,6 @@ public class PlaceholderUtil {
     }
 
     private static @Nullable String formatServerTime(@NotNull String pattern) {
-
         try {
             return DateTimeFormatter.ofPattern(pattern).format(LocalDateTime.now());
         } catch (IllegalArgumentException exception) {
@@ -110,11 +112,11 @@ public class PlaceholderUtil {
     /**
      * Проверяет, содержит ли строка плейсхолдеры формата %...%.
      *
-     * @param text проверяемая строка
+     * @param text исходная строка
      * @return true если плейсхолдеры найдены
      */
     public static boolean containsPlaceholders(@Nullable String text) {
-        return text != null && text.indexOf('%') != text.lastIndexOf('%');
+        return text != null && PAPI_PLACEHOLDER_PATTERN.matcher(text).find();
     }
 
     /**
@@ -136,39 +138,41 @@ public class PlaceholderUtil {
         } catch (ReflectiveOperationException | RuntimeException exception) {
             return text;
         }
+
     }
 
     /**
      * Подставляет внутренние плейсхолдеры плагина в строку.
      *
-     * @param text        исходная строка
-     * @param player      игрок (может быть null)
-     * @param money       сумма выплаты
-     * @param group       название группы
-     * @param interval    интервал выплаты в секундах
+     * @param text          исходная строка
+     * @param playerName    имя для {player} (игрок-контекст или получатель)
+     * @param money         сумма выплаты
+     * @param group         название группы
+     * @param interval      интервал выплаты в секундах
      * @param status        статус игрока
      * @param commandsCount количество команд группы
      * @param next          обратный отсчёт до следующей выплаты
+     * @param lastPayout    последняя выплата из истории (или статус "never")
      * @return строка с подставленными значениями
      */
     public static @NotNull String replaceTokens(@NotNull String text,
-                                                @Nullable Player player,
+                                                @NotNull String playerName,
                                                 @NotNull String money,
                                                 @Nullable String group,
                                                 long interval,
                                                 @NotNull String status,
                                                 int commandsCount,
-                                                @NotNull String next) {
-
+                                                @NotNull String next,
+                                                @NotNull String lastPayout) {
         return text
-                .replace("{player}", player != null ? player.getName() : "unknown")
+                .replace("{player}", playerName)
                 .replace("{money}", money)
                 .replace("{group}", group != null ? group : "none")
                 .replace("{interval}", String.valueOf(interval))
                 .replace("{status}", status)
                 .replace("{commands}", String.valueOf(commandsCount))
-                .replace("{next}", next);
-
+                .replace("{next}", next)
+                .replace("{last_payout}", lastPayout);
     }
 
     /**
@@ -181,51 +185,47 @@ public class PlaceholderUtil {
     public static @NotNull String formatDuration(long millis) {
 
         long totalSeconds = Math.max(0L, millis) / 1000L;
-
         long days = totalSeconds / 86400L;
         long hours = totalSeconds % 86400L / 3600L;
         long minutes = totalSeconds % 3600L / 60L;
         long seconds = totalSeconds % 60L;
 
-        StringBuilder result = new StringBuilder();
+        String[] units = new String[4];
+        int count = 0;
+        count = appendUnit(units, count, days, "d");
+        count = appendUnit(units, count, hours, "h");
+        count = appendUnit(units, count, minutes, "m");
+        count = appendUnit(units, count, seconds, "s");
 
-        result = appendUnit(result, days, "d");
-        result = appendUnit(result, hours, "h");
-        result = appendUnit(result, minutes, "m");
-        result = appendUnit(result, seconds, "s");
-
-        if (result.length() == 0) {
+        if (count == 0) {
             return "0s";
         }
 
-        // оставляем две старшие единицы: "1d 3h", "2h 5m", "1m 1s", "1s  " -> trim
-        String[] units = result.toString().trim().split("\s+");
-
-        return units.length > 2 ? units[0] + " " + units[1] : String.join(" ", units);
+        // оставляем две старшие единицы: "1d 3h", "2h 5m", "1m 1s"
+        int kept = Math.min(count, 2);
+        return String.join(" ", Arrays.copyOf(units, kept));
 
     }
 
-    private static @NotNull StringBuilder appendUnit(@NotNull StringBuilder builder,
-                                                     long value,
-                                                     @NotNull String unit) {
+    private static int appendUnit(@NotNull String[] units, int count,
+                                  long value, @NotNull String unit) {
 
-        if (value == 0L) {
-            return builder;
+        if (value == 0L || count == units.length) {
+            return count;
         }
 
-        if (builder.length() > 0) {
-            builder.append(' ');
-        }
-
-        return builder.append(value).append(unit);
+        units[count] = value + unit;
+        return count + 1;
 
     }
 
     /**
      * Форматирует сумму: целые значения без дробной части.
+     * Дробные - через {@link Locale#ROOT}, чтобы десятичный разделитель
+     * не зависел от локали сервера (запятая ломала бы команды с {money}).
      *
      * @param money сумма
-     * @return отформатированная строка
+     * @return строковое представление суммы
      */
     public static @NotNull String formatMoney(double money) {
 
@@ -233,7 +233,8 @@ public class PlaceholderUtil {
             return String.valueOf((long) money);
         }
 
-        return String.format("%.2f", money);
+        return String.format(Locale.ROOT, "%.2f", money);
 
     }
+
 }

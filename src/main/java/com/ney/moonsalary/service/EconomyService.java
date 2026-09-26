@@ -10,11 +10,17 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Обёртка над Vault Economy.
+ * <p>
+ * {@link #setup()} идемпотентен: повторный вызов с тем же провайдером
+ * не логирует и не меняет ничего. Если провайдер перерегистрировался
+ * (перезагрузка EssentialsX/CMI), ссылка заменяется на свежую -
+ * протухший экземпляр Economy не удерживается.
  */
 public class EconomyService {
 
     private final MoonSalary plugin;
     private final ConsoleService consoleService;
+
     private @Nullable Economy economy;
 
     public EconomyService(@NotNull MoonSalary plugin, @NotNull ConsoleService consoleService) {
@@ -24,8 +30,10 @@ public class EconomyService {
 
     /**
      * Подключается к экономике через Vault.
+     * Безопасно вызывать повторно: тот же провайдер - тихий no-op,
+     * новый провайдер - замена ссылки и лог.
      *
-     * @return true если экономика успешно подключена
+     * @return true если экономика доступна после вызова
      */
     public boolean setup() {
 
@@ -39,9 +47,17 @@ public class EconomyService {
             return false;
         }
 
-        this.economy = registration.getProvider();
+        Economy provider = registration.getProvider();
 
-        consoleService.log(ConsoleMessage.ECONOMY_HOOKED, "provider", economy.getName());
+        if (provider == null) {
+            return false;
+        }
+
+        if (provider != this.economy) {
+            this.economy = provider;
+            consoleService.log(ConsoleMessage.ECONOMY_HOOKED, "provider", safeName(provider));
+        }
+
         return true;
 
     }
@@ -71,31 +87,29 @@ public class EconomyService {
         try {
 
             EconomyResponse response = economy.depositPlayer(player, amount);
-
             if (!response.transactionSuccess()) {
-
                 consoleService.log(ConsoleMessage.DEPOSIT_FAILED,
                         "money", String.valueOf(amount),
                         "player", player.getName(),
                         "reason", String.valueOf(response.errorMessage));
                 return false;
-
             }
 
             return true;
 
         } catch (RuntimeException exception) {
-
             consoleService.log(ConsoleMessage.DEPOSIT_EXCEPTION,
                     "player", player.getName(),
-                    "reason", String.valueOf(exception.getMessage()));
+                    "reason", String.valueOf(exception));
             return false;
-
         }
+
     }
 
     /**
      * Форматирует сумму через экономику (символ валюты и т.д.).
+     * Провайдер может вернуть null или кинуть исключение - в обоих случаях
+     * используется plain-число, форматирование не может ронять выплату.
      *
      * @param amount сумма
      * @return отформатированная строка
@@ -107,13 +121,28 @@ public class EconomyService {
         }
 
         try {
-            return economy.format(amount);
+            String formatted = economy.format(amount);
+            return formatted != null ? formatted : String.valueOf(amount);
         } catch (RuntimeException exception) {
             return String.valueOf(amount);
         }
+
     }
 
     public void shutdown() {
         this.economy = null;
     }
+
+    /**
+     * Имя провайдера для лога: getName() сторонней реализации может кинуть
+     * исключение, логирование не должно ронять подключение экономики.
+     */
+    private @NotNull String safeName(@NotNull Economy provider) {
+        try {
+            return provider.getName();
+        } catch (RuntimeException exception) {
+            return provider.getClass().getSimpleName();
+        }
+    }
+
 }

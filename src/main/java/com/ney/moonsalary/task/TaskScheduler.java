@@ -1,10 +1,11 @@
 package com.ney.moonsalary.task;
 
 import com.ney.moonsalary.MoonSalary;
-import com.ney.moonsalary.config.ConfigManager;
+import com.ney.moonsalary.config.MoonSalaryConfig;
 import com.ney.moonsalary.config.type.PayoutMode;
 import com.ney.moonsalary.registry.GroupRegistry;
 import com.ney.moonsalary.service.AfkTracker;
+import com.ney.moonsalary.service.ConsoleService;
 import com.ney.moonsalary.service.EconomyService;
 import com.ney.moonsalary.service.PayoutSchedule;
 import com.ney.moonsalary.service.SalaryPayoutService;
@@ -22,27 +23,42 @@ import org.jetbrains.annotations.Nullable;
  * дедлайну выплаты ({@link PayoutSchedule}), обрабатывает должников и
  * пересоздаётся к следующему дедлайну. Между выплатами задач не существует,
  * поэтому простой сервера не стоит ничего.
+ * <p>
+ * Все методы вызываются из основного потока сервера.
  */
 public class TaskScheduler {
 
     private final MoonSalary plugin;
-    private final ConfigManager configManager;
+    private final MoonSalaryConfig configManager;
     private final GroupRegistry groupRegistry;
     private final AfkTracker afkTracker;
     private final EconomyService economyService;
     private final PayoutSchedule payoutSchedule;
     private final SalaryPayoutService payoutService;
+    private final ConsoleService consoleService;
+    private final TickClock tickClock;
 
     private @Nullable BukkitTask salaryTask;
     private @Nullable BukkitTask afkTask;
+    private @Nullable BukkitTask clockTask;
+
+    /**
+     * Дедлайн, к которому запланирован текущий персональный таск.
+     * Нужен, чтобы вход игрока с более ранним (например, просроченным
+     * и клампнутым в «сейчас») дедлайном переставлял пробуждение раньше.
+     */
+    private long scheduledPersonalDeadline = Long.MAX_VALUE;
 
     public TaskScheduler(@NotNull MoonSalary plugin,
-                         @NotNull ConfigManager configManager,
+                         @NotNull MoonSalaryConfig configManager,
                          @NotNull GroupRegistry groupRegistry,
                          @NotNull AfkTracker afkTracker,
                          @NotNull EconomyService economyService,
                          @NotNull PayoutSchedule payoutSchedule,
-                         @NotNull SalaryPayoutService payoutService) {
+                         @NotNull SalaryPayoutService payoutService,
+                         @NotNull ConsoleService consoleService,
+                         @NotNull TickClock tickClock) {
+
         this.plugin = plugin;
         this.configManager = configManager;
         this.groupRegistry = groupRegistry;
@@ -50,6 +66,9 @@ public class TaskScheduler {
         this.economyService = economyService;
         this.payoutSchedule = payoutSchedule;
         this.payoutService = payoutService;
+        this.consoleService = consoleService;
+        this.tickClock = tickClock;
+
     }
 
     /**
@@ -59,7 +78,7 @@ public class TaskScheduler {
     public void start() {
 
         stop();
-
+        startClockTask();
         startSalaryTask();
         startAfkTask();
 
@@ -79,9 +98,12 @@ public class TaskScheduler {
 
         cancel(salaryTask);
         cancel(afkTask);
+        cancel(clockTask);
 
         salaryTask = null;
         afkTask = null;
+        clockTask = null;
+        scheduledPersonalDeadline = Long.MAX_VALUE;
 
     }
 
@@ -99,11 +121,18 @@ public class TaskScheduler {
 
         payoutSchedule.track(player);
 
-        // Новый дедлайн не может быть раньше уже запланированного,
-        // поэтому перепланировка нужна только когда задач нет вовсе
-        if (salaryTask == null || salaryTask.isCancelled()) {
+        // Сохранённое окно могло истечь оффлайн и при загрузке клампится
+        // в «сейчас» - значит новый дедлайн МОЖЕТ быть раньше уже
+        // запланированного пробуждения. Перепланировка нужна, если задачи
+        // нет вовсе или если дедлайн вошедшего раньше текущего.
+        Long deadline = payoutSchedule.nextDeadline(player);
+        boolean noTask = salaryTask == null || salaryTask.isCancelled();
+        boolean earlierThanScheduled = deadline != null && deadline < scheduledPersonalDeadline;
+
+        if (noTask || earlierThanScheduled) {
             schedulePersonalPayout();
         }
+
     }
 
     /**
@@ -125,20 +154,24 @@ public class TaskScheduler {
         cancel(salaryTask);
         salaryTask = null;
 
+        long now = payoutSchedule.currentTicks();
         long nearest = payoutSchedule.nearestDeadline(Bukkit.getOnlinePlayers());
+        scheduledPersonalDeadline = nearest;
 
         if (nearest == Long.MAX_VALUE) {
             return;
         }
 
-        long now = System.currentTimeMillis();
-        long delayTicks = Math.max(1L, (nearest - now + 49L) / 50L);
-
+        long delayTicks = Math.max(1L, nearest - now);
         PersonalSalaryTask task = new PersonalSalaryTask(configManager, groupRegistry,
-                afkTracker, economyService, payoutSchedule, payoutService, this);
+                afkTracker, economyService, payoutSchedule, payoutService, consoleService, this);
 
         salaryTask = Bukkit.getScheduler().runTaskLater(plugin, task, delayTicks);
 
+    }
+
+    private void startClockTask() {
+        clockTask = Bukkit.getScheduler().runTaskTimer(plugin, tickClock, 1L, 1L);
     }
 
     private void startSalaryTask() {
@@ -154,10 +187,9 @@ public class TaskScheduler {
 
         }
 
-        payoutSchedule.anchorGlobal(System.currentTimeMillis());
-
+        payoutSchedule.anchorGlobal(payoutSchedule.currentTicks());
         GlobalSalaryTask task = new GlobalSalaryTask(configManager, groupRegistry,
-                afkTracker, economyService, payoutSchedule, payoutService);
+                afkTracker, economyService, payoutSchedule, payoutService, consoleService);
 
         salaryTask = Bukkit.getScheduler().runTaskTimer(plugin, task,
                 configManager.getSalaryIntervalTicks(),
@@ -166,20 +198,16 @@ public class TaskScheduler {
     }
 
     private void startAfkTask() {
-
-        AfkCheckTask task = new AfkCheckTask(configManager, afkTracker, economyService);
-
+        AfkCheckTask task = new AfkCheckTask(configManager, afkTracker, payoutSchedule);
         afkTask = Bukkit.getScheduler().runTaskTimer(plugin, task,
                 configManager.getAfkCheckIntervalTicks(),
                 configManager.getAfkCheckIntervalTicks());
-
     }
 
     private void cancel(@Nullable BukkitTask task) {
-
         if (task != null) {
             task.cancel();
         }
-
     }
+
 }

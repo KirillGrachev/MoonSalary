@@ -13,10 +13,13 @@ import java.util.regex.Pattern;
  */
 public class HexColorUtil {
 
+    /**
+     * Паттерн уже гарантирует ровно шесть HEX-цифр после '#',
+     * поэтому дополнительная валидация совпадения не нужна.
+     */
     private static final Pattern HEX_PATTERN = Pattern.compile("#[a-fA-F0-9]{6}");
 
     private HexColorUtil() {
-
     }
 
     /**
@@ -32,7 +35,6 @@ public class HexColorUtil {
         }
 
         Matcher matcher = HEX_PATTERN.matcher(text);
-
         StringBuilder result = new StringBuilder();
         int lastEnd = 0;
 
@@ -40,16 +42,12 @@ public class HexColorUtil {
 
             String hexCode = matcher.group();
 
-            if (hexCode.length() != 7 || !isValidHexCode(hexCode)) {
-                continue;
-            }
-
             result.append(text, lastEnd, matcher.start());
 
             // Преобразуем #RRGGBB -> &x&R&R&G&G&B&B
             StringBuilder replacement = new StringBuilder("&x");
             for (int i = 1; i < hexCode.length(); i++) {
-                replacement.append("&").append(hexCode.charAt(i));
+                replacement.append('&').append(hexCode.charAt(i));
             }
 
             result.append(replacement);
@@ -63,25 +61,4 @@ public class HexColorUtil {
 
     }
 
-    /**
-     * Проверяет валидность HEX-кода.
-     *
-     * @param code строка с HEX-кодом (#RRGGBB)
-     * @return true если код валиден, false иначе
-     */
-    private static boolean isValidHexCode(@NotNull String code) {
-
-        for (int i = 1; i < code.length(); i++) {
-
-            char c = code.charAt(i);
-            if (!Character.isDigit(c) && (c < 'a' || c > 'f')
-                    && (c < 'A' || c > 'F')) {
-                return false;
-            }
-
-        }
-
-        return true;
-
-    }
 }

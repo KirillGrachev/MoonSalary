@@ -18,4 +18,5 @@ public class EventDispatcher {
             Bukkit.getPluginManager().registerEvents(listener, plugin);
         }
     }
+
 }

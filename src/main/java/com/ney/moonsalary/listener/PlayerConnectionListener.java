@@ -12,6 +12,9 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Следит за входом и выходом игроков,
  * чтобы данные AFK всегда оставались актуальными.
+ * <p>
+ * События входа/выхода не отменяются, поэтому ignoreCancelled не используется;
+ * MONITOR - чтобы реагировать после всех плагинов, меняющих состояние игрока.
  */
 public class PlayerConnectionListener implements Listener {
 
@@ -24,19 +27,16 @@ public class PlayerConnectionListener implements Listener {
         this.taskScheduler = taskScheduler;
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerJoin(@NotNull PlayerJoinEvent event) {
-
         afkTracker.startTracking(event.getPlayer());
         taskScheduler.onPlayerJoined(event.getPlayer());
-
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerQuit(@NotNull PlayerQuitEvent event) {
-
         afkTracker.remove(event.getPlayer());
         taskScheduler.onPlayerQuit(event.getPlayer());
-
     }
+
 }

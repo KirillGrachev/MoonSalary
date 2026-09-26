@@ -1,5 +1,6 @@
 package com.ney.moonsalary.config.type;
 
+import com.ney.moonsalary.util.SoundResolver;
 import org.bukkit.Sound;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -19,6 +20,8 @@ public record SoundSettings(boolean enabled,
 
     /**
      * Создаёт настройки звука из имени в конфигурации.
+     * Имя разрешается через {@link SoundResolver}: enum-константа либо
+     * ключ реестра звуков (ядра 1.21.3+), регистр и локаль не важны.
      *
      * @param name      имя bukkit-звука
      * @param enabled   включён ли звук
@@ -37,9 +40,9 @@ public record SoundSettings(boolean enabled,
             return new SoundSettings(false, null, volume, pitch);
         }
 
-        try {
-            return new SoundSettings(true, Sound.valueOf(name.trim().toUpperCase()), volume, pitch);
-        } catch (IllegalArgumentException exception) {
+        Sound resolved = SoundResolver.resolve(name);
+
+        if (resolved == null) {
 
             if (onInvalid != null) {
                 onInvalid.run();
@@ -48,6 +51,9 @@ public record SoundSettings(boolean enabled,
             return new SoundSettings(false, null, volume, pitch);
 
         }
+
+        return new SoundSettings(true, resolved, volume, pitch);
+
     }
 
     /**
@@ -58,4 +64,5 @@ public record SoundSettings(boolean enabled,
     public boolean isPlayable() {
         return enabled && sound != null;
     }
+
 }

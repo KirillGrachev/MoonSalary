@@ -1,0 +1,108 @@
+# Salary groups of MoonSalary.
+# Group name = permission (prefix + name), for example: group.vip
+# (prefix is settings.permissions.prefix in config.yml).
+# The highest priority wins if a player has several group permissions;
+# settings.payout.fallback_group in config.yml covers players without any.
+#
+# Placeholders in messages: {money}, {player}, {group}, {interval}, {status},
+# {commands}, {next}, {last_payout}, {prefix}, {servertime_<pattern>},
+# %placeholder% (PlaceholderAPI). HEX colors are supported: #42fffc text
+# Placeholders in commands: {player}, {money} (plain number),
+# {money_formatted} (economy format when format_money: true), {group}
+
+groups:
+
+  default: # Base group - salary for everyone, including players without any group permission
+    salary: 100
+    priority: 0
+    messages:
+      - ''
+      - '&f&6╔ &fThe salary hour has come!'
+      - '&f&6╚ &fYou received &e{money} ⛂'
+      - ''
+      - '  &e⌛ {servertime_HH:mm} {servertime_dd/MM/yy}'
+      - ''
+
+  vip: # Example of a donation group
+    salary: 250
+    priority: 1
+    messages:
+      - ''
+      - '&f&6╔ &fThe salary hour has come!'
+      - '&f&6╚ &fYou received &e{money} ⛂'
+      - ''
+      - '  &e⌛ {servertime_HH:mm} {servertime_dd/MM/yy}'
+      - ''
+
+  premium:
+    salary: 400
+    priority: 2
+    messages:
+      - ''
+      - '&f&6╔ &fThe salary hour has come!'
+      - '&f&6╚ &fYou received &e{money} ⛂'
+      - ''
+      - '  &e⌛ {servertime_HH:mm} {servertime_dd/MM/yy}'
+      - ''
+
+  legend:
+    salary: 600
+    priority: 3
+    messages:
+      - ''
+      - '&f&6╔ &fThe salary hour has come!'
+      - '&f&6╚ &fYou received &e{money} ⛂'
+      - ''
+      - '  &e⌛ {servertime_HH:mm} {servertime_dd/MM/yy}'
+      - ''
+
+  media: # Group with an extra command on payout
+    salary: 500
+    priority: 4
+    commands:
+      - 'give {player} diamond 5'
+    messages:
+      - ''
+      - '&f&6╔ &fThe salary hour has come!'
+      - '&f&6╚ &fYou received &e{money} ⛂'
+      - ''
+      - '  &e⌛ {servertime_HH:mm} {servertime_dd/MM/yy}'
+      - ''
+
+  helper: # Staff group
+    salary: 700
+    priority: 5
+    messages:
+      - ''
+      - '&f&6╔ &fThe salary hour has come!'
+      - '&f&6╚ &fYou received &e{money} ⛂'
+      - ''
+      - '  &e⌛ {servertime_HH:mm} {servertime_dd/MM/yy}'
+      - ''
+
+  moderator: # Several commands at once
+    salary: 800
+    priority: 6
+    commands:
+      - 'give {player} golden_apple 3'
+      - 'minecraft:xp add {player} 100 points'
+    messages:
+      - ''
+      - '&f&6╔ &fThe salary hour has come!'
+      - '&f&6╚ &fYou received &e{money} ⛂'
+      - ''
+      - '  &e⌛ {servertime_HH:mm} {servertime_dd/MM/yy}'
+      - ''
+
+  admin: # The highest priority - wins if the player has several groups
+    salary: 1000
+    priority: 7
+    commands:
+      - 'give {player} netherite_ingot 1'
+    messages:
+      - ''
+      - '&f&6╔ &fThe salary hour has come!'
+      - '&f&6╚ &fYou received &e{money} ⛂'
+      - ''
+      - '  &e⌛ {servertime_HH:mm} {servertime_dd/MM/yy}'
+      - ''

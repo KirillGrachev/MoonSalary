@@ -1,7 +1,7 @@
 name: MoonSalary
 version: '${project.version}'
 main: com.ney.moonsalary.MoonSalary
-api-version: 1.16
+api-version: '1.20'
 author: Ney
 description: Salary for donation groups with AFK protection
 softdepend: [Vault, PlaceholderAPI]
@@ -18,6 +18,12 @@ permissions:
     default: op
   moonsalary.admin.list:
     description: Allows to view all configured salary groups
+    default: op
+  moonsalary.admin.info:
+    description: Allows to view salary info of other players
+    default: op
+  moonsalary.admin.give:
+    description: Allows to pay out a group salary manually
     default: op
   moonsalary.bypass.afk:
     description: Allows to receive a salary while being AFK

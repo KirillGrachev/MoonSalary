@@ -1,6 +1,5 @@
 package com.ney.moonsalary.command;
 
-import com.ney.moonsalary.MoonSalary;
 import com.ney.moonsalary.config.ConfigManager;
 import com.ney.moonsalary.config.type.AfkState;
 import com.ney.moonsalary.config.type.ConsoleMessage;
@@ -9,6 +8,8 @@ import com.ney.moonsalary.registry.SalaryGroup;
 import com.ney.moonsalary.service.AfkTracker;
 import com.ney.moonsalary.service.ConsoleService;
 import com.ney.moonsalary.service.MessageService;
+import com.ney.moonsalary.service.SalaryPayoutService;
+import com.ney.moonsalary.storage.PayoutSource;
 import com.ney.moonsalary.task.TaskScheduler;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -21,37 +22,46 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Команда /salary - информация о зарплате, список групп и перезагрузка.
+ * <p>
+ * Все проверки прав идут через единый хелпер, уважающий
+ * {@code settings.permissions.enabled}; отказ всегда явный (сообщение),
+ * а не молчаливый фолбэк.
  */
 public class SalaryCommand implements TabExecutor {
 
     private static final String ARG_INFO = "info";
     private static final String ARG_RELOAD = "reload";
     private static final String ARG_LIST = "list";
+    private static final String ARG_GIVE = "give";
 
-    private final MoonSalary plugin;
     private final ConfigManager configManager;
     private final GroupRegistry groupRegistry;
     private final AfkTracker afkTracker;
     private final MessageService messageService;
     private final TaskScheduler taskScheduler;
     private final ConsoleService consoleService;
+    private final SalaryPayoutService payoutService;
 
-    public SalaryCommand(@NotNull MoonSalary plugin,
-                         @NotNull ConfigManager configManager,
+    public SalaryCommand(@NotNull ConfigManager configManager,
                          @NotNull GroupRegistry groupRegistry,
                          @NotNull AfkTracker afkTracker,
                          @NotNull MessageService messageService,
-                         @NotNull TaskScheduler taskScheduler) {
-        this.plugin = plugin;
+                         @NotNull TaskScheduler taskScheduler,
+                         @NotNull ConsoleService consoleService,
+                         @NotNull SalaryPayoutService payoutService) {
+
         this.configManager = configManager;
         this.groupRegistry = groupRegistry;
         this.afkTracker = afkTracker;
         this.messageService = messageService;
         this.taskScheduler = taskScheduler;
-        this.consoleService = plugin.getConsoleService();
+        this.consoleService = consoleService;
+        this.payoutService = payoutService;
+
     }
 
     @Override
@@ -60,38 +70,30 @@ public class SalaryCommand implements TabExecutor {
                              @NotNull String label,
                              String @NotNull [] args) {
 
-        if (plugin.isStartupFailed()) {
-
-            sendMessage(sender, configManager.getStartupFailedMessage());
-            return true;
-
-        }
-
         if (args.length == 0) {
-
             sendInfo(sender, sender instanceof Player player ? player : null);
             return true;
-
         }
 
-        String subCommand = args[0].toLowerCase();
+        String subCommand = args[0].toLowerCase(Locale.ROOT);
 
         switch (subCommand) {
 
             case ARG_RELOAD -> reload(sender);
-
             case ARG_LIST -> sendList(sender);
-
+            case ARG_GIVE -> give(sender, args);
             case ARG_INFO -> {
+                if (args.length > 1) {
 
-                if (args.length > 1 && sender.hasPermission(configManager.getPermissionList())) {
-
-                    sendInfo(sender, findPlayer(sender, args[1]));
+                    // Отдельное право на чужое инфо; отказ - явное сообщение,
+                    // а не молчаливый показ собственной зарплаты
+                    if (hasPermission(sender, configManager.getPermissionInfo())) {
+                        sendInfo(sender, findPlayer(sender, args[1]));
+                    }
 
                 } else {
                     sendInfo(sender, sender instanceof Player player ? player : null);
                 }
-
             }
 
             default -> sendMessage(sender, configManager.getUsageMessage());
@@ -112,25 +114,37 @@ public class SalaryCommand implements TabExecutor {
 
             List<String> suggestions = new ArrayList<>(List.of(ARG_INFO));
 
-            if (sender.hasPermission(configManager.getPermissionReload())) {
+            if (permitted(sender, configManager.getPermissionReload())) {
                 suggestions.add(ARG_RELOAD);
             }
 
-            if (sender.hasPermission(configManager.getPermissionList())) {
+            if (permitted(sender, configManager.getPermissionList())) {
                 suggestions.add(ARG_LIST);
+            }
+
+            if (permitted(sender, configManager.getPermissionGive())) {
+                suggestions.add(ARG_GIVE);
             }
 
             return filter(suggestions, args[0]);
 
         }
 
-        if (args.length == 2 && ARG_INFO.equalsIgnoreCase(args[0])
-                && sender.hasPermission(configManager.getPermissionList())) {
+        boolean infoOther = ARG_INFO.equalsIgnoreCase(args[0])
+                && permitted(sender, configManager.getPermissionInfo());
+        boolean givePlayer = ARG_GIVE.equalsIgnoreCase(args[0])
+                && permitted(sender, configManager.getPermissionGive());
 
+        if (args.length == 2 && (infoOther || givePlayer)) {
             return filter(Bukkit.getOnlinePlayers().stream()
                     .map(Player::getName)
                     .toList(), args[1]);
+        }
 
+        if (args.length == 3 && givePlayer) {
+            return filter(groupRegistry.getRegisteredGroups().stream()
+                    .map(SalaryGroup::getName)
+                    .toList(), args[2]);
         }
 
         return Collections.emptyList();
@@ -146,15 +160,12 @@ public class SalaryCommand implements TabExecutor {
     private void sendInfo(@NotNull CommandSender sender, @Nullable Player target) {
 
         if (target == null) {
-
             sendMessage(sender, configManager.getUsageMessage());
             return;
-
         }
 
         SalaryGroup group = groupRegistry.getPlayerGroup(target);
         double salary = group != null ? group.getSalary() : 0D;
-
         List<String> lines = target.equals(sender)
                 ? configManager.getInfoSelfMessage()
                 : configManager.getInfoOtherMessage();
@@ -178,27 +189,22 @@ public class SalaryCommand implements TabExecutor {
         List<SalaryGroup> groups = groupRegistry.getRegisteredGroups();
 
         if (groups.isEmpty()) {
-
             sendMessage(sender, configManager.getListEmpty());
             return;
-
         }
 
         String header = configManager.getListHeader()
                 .replace("{count}", String.valueOf(groups.size()));
-
         messageService.sendLine(sender, header);
 
         for (SalaryGroup group : groups) {
-
             String entry = configManager.getListEntry()
                     .replace("{group}", group.getName())
                     .replace("{money}", messageService.formatMoney(group.getSalary()))
                     .replace("{priority}", String.valueOf(group.getPriority()));
-
             messageService.sendLine(sender, entry);
-
         }
+
     }
 
     /**
@@ -212,8 +218,8 @@ public class SalaryCommand implements TabExecutor {
             return;
         }
 
-        plugin.reloadConfig();
-
+        // Единственный источник истины - ConfigManager: он сам перечитывает
+        // файл, дублирующий plugin.reloadConfig() не нужен
         configManager.reload();
         groupRegistry.reloadRegistry();
         afkTracker.clear();
@@ -221,24 +227,72 @@ public class SalaryCommand implements TabExecutor {
 
         consoleService.log(ConsoleMessage.RELOADED,
                 "groups", String.valueOf(groupRegistry.getRegisteredGroups().size()));
-
         sendMessage(sender, configManager.getReloadSuccessMessage());
 
     }
 
+    /**
+     * Ручная выплата зарплаты указанной группы указанному игроку.
+     * AFK-состояние не учитывается: это явное админское действие,
+     * но SalaryPayEvent по-прежнему позволяет другим плагинам отменить выплату.
+     *
+     * @param sender отправитель команды
+     * @param args   аргументы команды (give <player> <group>)
+     */
+    private void give(@NotNull CommandSender sender, String @NotNull [] args) {
+
+        if (!hasPermission(sender, configManager.getPermissionGive())) {
+            return;
+        }
+
+        if (args.length < 3) {
+            sendMessage(sender, configManager.getGiveUsageMessage());
+            return;
+        }
+
+        Player target = findPlayer(sender, args[1]);
+
+        if (target == null) {
+            return;
+        }
+
+        SalaryGroup group = groupRegistry.getGroup(args[2]);
+
+        if (group == null) {
+            sendMessage(sender, configManager.getGiveUnknownGroupMessage()
+                    .replace("{group}", args[2]));
+            return;
+        }
+
+        // Ручная выдача: история помечается MANUAL, персональное окно выплаты
+        // при этом не сбрасывается и не продляется - give не влияет на таймер
+        boolean paid = payoutService.payout(target, group, AfkState.ACTIVE, PayoutSource.MANUAL);
+
+        String template = paid
+                ? configManager.getGiveSuccessMessage()
+                : configManager.getGiveFailedMessage();
+        sendMessage(sender, template
+                .replace("{player}", target.getName())
+                .replace("{group}", group.getName())
+                .replace("{money}", messageService.formatMoney(group.getSalary())));
+
+    }
+
+    /**
+     * Статус игрока для info: группа не найдена / AFK / онлайн.
+     * Target всегда онлайн: он либо sender, либо найден getPlayerExact.
+     *
+     * @param target игрок
+     * @param group  группа игрока (может быть null)
+     * @return строка статуса из конфигурации
+     */
     private @NotNull String resolveStatus(@NotNull Player target, @Nullable SalaryGroup group) {
 
         if (group == null) {
             return configManager.getStatusNoGroup();
         }
 
-        if (!target.isOnline()) {
-            return configManager.getStatusOffline();
-        }
-
-        AfkState afkState = afkTracker.isAfk(target) ? AfkState.AFK : AfkState.ACTIVE;
-
-        return afkState == AfkState.AFK
+        return afkTracker.isAfk(target)
                 ? configManager.getStatusAfk()
                 : configManager.getStatusOnline();
 
@@ -249,19 +303,37 @@ public class SalaryCommand implements TabExecutor {
         Player target = Bukkit.getPlayerExact(name);
 
         if (target == null) {
-
             sendMessage(sender, configManager.getUnknownPlayerMessage()
                     .replace("{player}", name));
-
         }
 
         return target;
 
     }
 
+    /**
+     * Тихая проверка права: учитывает глобальный выключатель permission-системы,
+     * но не отправляет сообщений (для tab-complete).
+     *
+     * @param sender     отправитель
+     * @param permission право
+     * @return true если право действует и у отправителя оно есть
+     */
+    private boolean permitted(@NotNull CommandSender sender, @NotNull String permission) {
+        return !configManager.arePermissionsEnabled() || sender.hasPermission(permission);
+    }
+
+    /**
+     * Проверка права с явным отказом: при нехватке права отправляет
+     * сообщение no_permission.
+     *
+     * @param sender     отправитель
+     * @param permission право
+     * @return true если действие разрешено
+     */
     private boolean hasPermission(@NotNull CommandSender sender, @NotNull String permission) {
 
-        if (!configManager.arePermissionsEnabled() || sender.hasPermission(permission)) {
+        if (permitted(sender, permission)) {
             return true;
         }
 
@@ -276,18 +348,18 @@ public class SalaryCommand implements TabExecutor {
 
     /**
      * Оставляет только значения, начинающиеся с введённого текста.
+     * Регистр приводится через {@link Locale#ROOT}, чтобы сравнение
+     * не зависело от локали сервера.
      *
      * @param values список вариантов
      * @param token  введённый текст
      * @return отфильтрованный список
      */
     public static @NotNull List<String> filter(@NotNull List<String> values, @NotNull String token) {
-
-        String lowerToken = token.toLowerCase();
-
+        String lowerToken = token.toLowerCase(Locale.ROOT);
         return values.stream()
-                .filter(value -> value.toLowerCase().startsWith(lowerToken))
+                .filter(value -> value.toLowerCase(Locale.ROOT).startsWith(lowerToken))
                 .toList();
-
     }
+
 }

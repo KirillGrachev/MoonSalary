@@ -1,5 +1,23 @@
+# Build output
 target/
-*.jar
+
+# IDE
 .idea/
 *.iml
+# Файл модуля проекта ведется в репозитории сознательно (Minecraft-facet для IDEA)
+!MoonSalary.iml
 .vscode/
+.settings/
+.classpath
+.project
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local artifacts
+*.zip
+*.jar
+
+# Local smoke-test leftovers
+server.pid

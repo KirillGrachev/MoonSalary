@@ -16,10 +16,8 @@ public class PlayerAfkEvent extends Event {
     private final boolean afk;
 
     public PlayerAfkEvent(@NotNull Player player, boolean afk) {
-
         this.player = player;
         this.afk = afk;
-
     }
 
     public Player getPlayer() {
@@ -43,4 +41,5 @@ public class PlayerAfkEvent extends Event {
     public static HandlerList getHandlerList() {
         return HANDLERS;
     }
+
 }

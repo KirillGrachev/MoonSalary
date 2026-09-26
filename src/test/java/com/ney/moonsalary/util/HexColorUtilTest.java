@@ -14,12 +14,10 @@ class HexColorUtilTest {
     @Test
     @DisplayName("HEX-код преобразуется в &x&R&R&G&G&B&B")
     void convertsHexCode() {
-
         String result = HexColorUtil.color("#42fffcText");
 
         assertEquals(SECTION + "x" + SECTION + "4" + SECTION + "2" + SECTION + "f"
                 + SECTION + "f" + SECTION + "f" + SECTION + "c" + "Text", result);
-
     }
 
     @Test
@@ -37,19 +35,15 @@ class HexColorUtilTest {
     @Test
     @DisplayName("null и пустая строка возвращают пустую строку")
     void handlesEmptyInput() {
-
         assertEquals("", HexColorUtil.color(null));
         assertEquals("", HexColorUtil.color(""));
-
     }
 
     @Test
     @DisplayName("PlaceholderAPI не подключён - строка возвращается как есть")
     void placeholdersAreUntouchedWithoutApi() {
-
         assertFalse(PlaceholderUtil.isSupported());
         assertEquals("%server_online%", PlaceholderUtil.applyPlaceholders(null, "%server_online%"));
-
     }
 
     @Test
@@ -58,6 +52,7 @@ class HexColorUtilTest {
 
         assertTrue(PlaceholderUtil.containsPlaceholders("%servertime_HH:mm%"));
         assertFalse(PlaceholderUtil.containsPlaceholders("50% скидки"));
+        assertFalse(PlaceholderUtil.containsPlaceholders("скидка 10% + налог 5%"));
         assertFalse(PlaceholderUtil.containsPlaceholders(null));
 
     }
@@ -65,10 +60,8 @@ class HexColorUtilTest {
     @Test
     @DisplayName("Целые суммы выводятся без дробной части")
     void formatsMoney() {
-
         assertEquals("500", PlaceholderUtil.formatMoney(500.0D));
         assertEquals("500.50", PlaceholderUtil.formatMoney(500.5D));
-
     }
 
     @Test
@@ -112,11 +105,20 @@ class HexColorUtilTest {
     @Test
     @DisplayName("Внутренние плейсхолдеры подставляются в строку")
     void replacesTokens() {
-
         String result = PlaceholderUtil.replaceTokens("{group}: {money} / {interval} ({status}) {next}",
-                null, "250", "staff", 3700L, "online", 2, "1h");
+                "Ney", "250", "staff", 3700L, "online", 2, "1h", "never");
 
         assertEquals("staff: 250 / 3700 (online) 1h", result);
-
     }
+
+    @Test
+    @DisplayName("{player} раскрывается из переданного имени")
+    void replacesPlayerToken() {
+        assertEquals("hi Ney", PlaceholderUtil.replaceTokens("hi {player}",
+                "Ney", "0", null, 0L, "", 0, "", "never"));
+
+        assertEquals("last: 100", PlaceholderUtil.replaceTokens("last: {last_payout}",
+                "Ney", "0", null, 0L, "", 0, "", "100"));
+    }
+
 }

@@ -1,42 +1,55 @@
 package com.ney.moonsalary.service;
 
-import com.ney.moonsalary.config.ConfigManager;
+import com.ney.moonsalary.config.MoonSalaryConfig;
 import com.ney.moonsalary.config.type.ConsoleMessage;
 import com.ney.moonsalary.config.type.SoundSettings;
 import com.ney.moonsalary.registry.SalaryGroup;
+import com.ney.moonsalary.storage.PayoutHistoryService;
 import com.ney.moonsalary.util.PlaceholderUtil;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Locale;
 
 /**
  * Отправка сообщений, тайтлов и звуков.
+ * <p>
+ * Все вызовы из основного потока сервера, поэтому флаги «предупреждение
+ * уже выведено» - обычные boolean.
  */
 public class MessageService {
 
-    private final ConfigManager configManager;
+    private final MoonSalaryConfig configManager;
     private final EconomyService economyService;
     private final ConsoleService consoleService;
     private final PayoutSchedule payoutSchedule;
+    private final PayoutHistoryService historyService;
 
     /** Предупреждение об отсутствии PlaceholderAPI выводится один раз */
-    private final AtomicBoolean placeholderWarningSent = new AtomicBoolean(false);
+    private boolean placeholderWarningSent;
 
     /** Предупреждение о невалидном паттерне времени выводится один раз */
-    private final AtomicBoolean invalidTimePatternWarningSent = new AtomicBoolean(false);
+    private boolean invalidTimePatternWarningSent;
 
-    public MessageService(@NotNull ConfigManager configManager,
+    public MessageService(@NotNull MoonSalaryConfig configManager,
                           @NotNull EconomyService economyService,
                           @NotNull ConsoleService consoleService,
-                          @NotNull PayoutSchedule payoutSchedule) {
+                          @NotNull PayoutSchedule payoutSchedule,
+                          @NotNull PayoutHistoryService historyService) {
+
         this.configManager = configManager;
         this.economyService = economyService;
         this.consoleService = consoleService;
         this.payoutSchedule = payoutSchedule;
+        this.historyService = historyService;
+
     }
 
     /**
@@ -53,9 +66,7 @@ public class MessageService {
                               @Nullable SalaryGroup group,
                               double money,
                               @NotNull String status) {
-
         sendFormatted(player, player, messages, group, money, status);
-
     }
 
     /**
@@ -74,7 +85,6 @@ public class MessageService {
                               @Nullable SalaryGroup group,
                               double money,
                               @NotNull String status) {
-
         for (String message : messages) {
             sender.sendMessage(formatLine(context, sender.getName(), message, group, money, status));
         }
@@ -89,14 +99,17 @@ public class MessageService {
     public void sendLine(@NotNull CommandSender sender, @NotNull String text) {
 
         String formatted = formatLine(null, sender.getName(), text, null, 0D, "");
-
         if (!formatted.isEmpty()) {
             sender.sendMessage(formatted);
         }
+
     }
 
     /**
      * Форматирует одну строку: PlaceholderAPI + внутренние плейсхолдеры.
+     * <p>
+     * {player} раскрывается в единственном месте - {@code replaceTokens}:
+     * при наличии контекста это игрок-контекст, иначе получатель сообщения.
      *
      * @param context    игрок для плейсхолдеров PlaceholderAPI (может быть null)
      * @param senderName имя получателя сообщения
@@ -114,23 +127,64 @@ public class MessageService {
                                       @NotNull String status) {
 
         String result = PlaceholderUtil.applyPlaceholders(context, text);
-
         warnAboutMissingPlaceholders(result);
-
         result = PlaceholderUtil.applyServerTime(result);
         warnAboutInvalidTimePattern(result);
 
-        result = PlaceholderUtil.replaceTokens(result, context, formatMoney(money),
+        String playerName = context != null ? context.getName() : senderName;
+
+        result = PlaceholderUtil.replaceTokens(result, playerName, formatMoney(money),
                 group != null ? group.getName() : null,
                 configManager.getSalaryIntervalSeconds(),
                 status,
                 group != null ? group.getCommands().size() : 0,
-                resolveNext(context));
+                resolveNext(context),
+                resolveLast(context));
 
-        return result
-                .replace("{player}", senderName)
-                .replace("{prefix}", configManager.getMessagePrefix());
+        return result.replace("{prefix}", configManager.getMessagePrefix());
 
+    }
+
+    /**
+     * Считает обратный отсчёт до следующей выплаты игрока.
+     *
+     * @param context игрок (может быть null)
+     * @return форматированная длительность или пустая строка
+     */
+    private @NotNull String resolveNext(@Nullable Player context) {
+
+        if (context == null) {
+            return "";
+        }
+
+        return PlaceholderUtil.formatDuration(
+                payoutSchedule.millisUntilNext(context, payoutSchedule.currentTicks()));
+
+    }
+
+    /**
+     * Форматирует последнюю выплату игрока из истории: сумма и время.
+     * Пока истории нет - статус no_payout из messages.yml.
+     *
+     * @param context игрок (может быть null)
+     * @return строка для {last_payout}
+     */
+    private @NotNull String resolveLast(@Nullable Player context) {
+
+        if (context == null) {
+            return "";
+        }
+
+        return historyService.last(context.getUniqueId())
+                .map(entry -> PlaceholderUtil.formatMoney(entry.amount())
+                        + " (" + formatTime(entry.paidAt()) + ")")
+                .orElseGet(configManager::getStatusNoPayout);
+
+    }
+
+    private static @NotNull String formatTime(long epochMillis) {
+        return DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm", Locale.ROOT)
+                .format(LocalDateTime.ofInstant(Instant.ofEpochMilli(epochMillis), ZoneId.systemDefault()));
     }
 
     /**
@@ -191,59 +245,21 @@ public class MessageService {
 
     }
 
-    /**
-     * Склеивает несколько строк в одну (используется для тайтлов).
-     *
-     * @param context    игрок для плейсхолдеров
-     * @param viewer     получатель сообщения
-     * @param messages   строки из конфигурации
-     * @param status     статус игрока
-     * @return одна готовая строка
-     */
-    private @NotNull String joinLines(@Nullable Player context,
-                                      @NotNull Player viewer,
-                                      @NotNull List<String> messages,
-                                      @NotNull String status) {
-
-        return String.join(" ", messages.stream()
-                .filter(line -> !line.isEmpty())
-                .map(line -> formatLine(context, viewer.getName(), line, null, 0D, status))
-                .toList());
-
-    }
-
-    /**
-     * Считает обратный отсчёт до следующей выплаты игрока.
-     *
-     * @param context игрок (может быть null)
-     * @return форматированная длительность или пустая строка
-     */
-    private @NotNull String resolveNext(@Nullable Player context) {
-
-        if (context == null) {
-            return "";
-        }
-
-        return PlaceholderUtil.formatDuration(
-                payoutSchedule.millisUntilNext(context, System.currentTimeMillis()));
-
-    }
-
     private void warnAboutInvalidTimePattern(@NotNull String text) {
 
         if (!PlaceholderUtil.hasUnresolvedServerTime(text)) {
             return;
         }
 
-        if (invalidTimePatternWarningSent.compareAndSet(false, true)) {
-
+        if (!invalidTimePatternWarningSent) {
+            invalidTimePatternWarningSent = true;
             int start = text.indexOf("{servertime_");
             int end = text.indexOf('}', start);
-
             consoleService.log(ConsoleMessage.INVALID_TIME_PATTERN,
                     "token", text.substring(start, end != -1 ? end + 1 : text.length()));
 
         }
+
     }
 
     private void warnAboutMissingPlaceholders(@NotNull String text) {
@@ -252,8 +268,11 @@ public class MessageService {
             return;
         }
 
-        if (placeholderWarningSent.compareAndSet(false, true)) {
+        if (!placeholderWarningSent) {
+            placeholderWarningSent = true;
             consoleService.log(ConsoleMessage.PLACEHOLDERS_NO_API);
         }
+
     }
+
 }

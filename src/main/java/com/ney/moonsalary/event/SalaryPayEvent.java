@@ -11,8 +11,13 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Событие выдачи зарплаты игроку.
  * <p>
- * Вызывается до фактической выдачи денег и может быть отменено
- * другими плагинами.
+ * Вызывается после всех внутренних проверок (включая AFK-блокировку)
+ * непосредственно перед депозитом и может быть отменено другими плагинами.
+ * Для заблокированных выплат событие не вызывается вовсе.
+ * <p>
+ * Неотменённое событие означает «депозит будет отправлен в экономику»,
+ * но не гарантирует его успех: провайдер экономики может отклонить
+ * операцию (нехватка места в хранилище, внутренняя ошибка и т.п.).
  */
 public class SalaryPayEvent extends Event implements Cancellable {
 
@@ -20,20 +25,20 @@ public class SalaryPayEvent extends Event implements Cancellable {
 
     private final Player player;
     private final SalaryGroup group;
-    private final AfkState afkState;
     private final double amount;
+    private final AfkState afkState;
 
     private boolean cancelled;
 
     public SalaryPayEvent(@NotNull Player player,
                           @NotNull SalaryGroup group,
-                          @NotNull AfkState afkState,
-                          double amount) {
+                          double amount,
+                          @NotNull AfkState afkState) {
 
         this.player = player;
         this.group = group;
-        this.afkState = afkState;
         this.amount = amount;
+        this.afkState = afkState;
 
     }
 
@@ -45,12 +50,18 @@ public class SalaryPayEvent extends Event implements Cancellable {
         return group;
     }
 
-    public AfkState getAfkState() {
-        return afkState;
-    }
-
     public double getAmount() {
         return amount;
+    }
+
+    /**
+     * Состояние AFK игрока на момент выплаты: ACTIVE или BYPASSED
+     * (игрок в AFK, но имеет право обхода).
+     *
+     * @return состояние AFK
+     */
+    public @NotNull AfkState getAfkState() {
+        return afkState;
     }
 
     @Override
@@ -71,4 +82,5 @@ public class SalaryPayEvent extends Event implements Cancellable {
     public static HandlerList getHandlerList() {
         return HANDLERS;
     }
+
 }

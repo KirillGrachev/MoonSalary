@@ -1,7 +1,6 @@
 package com.ney.moonsalary.service;
 
 import com.ney.moonsalary.MoonSalary;
-import com.ney.moonsalary.config.ConfigManager;
 import com.ney.moonsalary.config.type.ConsoleMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -13,12 +12,10 @@ import java.util.logging.Logger;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class ConsoleServiceTest {
 
-    private MoonSalary plugin;
     private Logger logger;
     private ConsoleService consoleService;
 
@@ -26,18 +23,15 @@ class ConsoleServiceTest {
     void setUp() {
 
         logger = mock(Logger.class);
-
-        plugin = mock(MoonSalary.class);
+        MoonSalary plugin = mock(MoonSalary.class);
         when(plugin.getLogger()).thenReturn(logger);
-
         this.consoleService = new ConsoleService(plugin);
 
     }
 
     @Test
-    @DisplayName("Без конфигурации используется текст по умолчанию")
-    void fallsBackToDefaultText() {
-
+    @DisplayName("Текст берётся из кода (enum), плейсхолдеры подставляются парами")
+    void logsEnumTextWithTokens() {
         consoleService.log(ConsoleMessage.STARTUP, "groups", "8");
 
         verify(logger).log(Level.INFO, "MoonSalary is up and running! Groups: 8");
@@ -45,74 +39,28 @@ class ConsoleServiceTest {
     }
 
     @Test
-    @DisplayName("Плейсхолдеры подставляются парами")
-    void appliesTokenPairs() {
-
-        assertEquals("a=1, b=2", ConsoleService.applyTokens("a={a}, b={b}", "a", "1", "b", "2"));
-
-    }
-
-    @Test
-    @DisplayName("Шаблоны берутся из конфигурации")
-    void usesConfigTemplates() {
-
-        ConfigManager configManager = mock(ConfigManager.class);
-        when(configManager.areConsoleMessagesEnabled()).thenReturn(true);
-        when(configManager.getConsoleMessage("startup", ConsoleMessage.STARTUP.getFallback()))
-                .thenReturn("Custom start: {groups} groups");
-
-        consoleService.attach(configManager);
-        consoleService.log(ConsoleMessage.STARTUP, "groups", "3");
-
-        verify(logger).log(Level.INFO, "Custom start: 3 groups");
-
-    }
-
-    @Test
-    @DisplayName("{prefix} подставляется, цветовые коды сохраняются")
-    void substitutesPrefixAndKeepsColors() {
-
-        ConfigManager configManager = mock(ConfigManager.class);
-        when(configManager.areConsoleMessagesEnabled()).thenReturn(true);
-        when(configManager.getMessagePrefix()).thenReturn("\u00A7b\u00A7lM\u00A79\u00A7lL \u00A77\u00BB \u00A7f");
-        when(configManager.getConsoleMessage("startup", ConsoleMessage.STARTUP.getFallback()))
-                .thenReturn("{prefix}Up and running: {groups} groups");
-
-        consoleService.attach(configManager);
-        consoleService.log(ConsoleMessage.STARTUP, "groups", "4");
-
-        verify(logger).log(Level.INFO,
-                "\u00A7b\u00A7lM\u00A79\u00A7lL \u00A77\u00BB \u00A7fUp and running: 4 groups");
-
-    }
-
-    @Test
-    @DisplayName("&-коды в консольных шаблонах преобразуются как в чате")
-    void translatesColorCodes() {
-
-        ConfigManager configManager = mock(ConfigManager.class);
-        when(configManager.areConsoleMessagesEnabled()).thenReturn(true);
-        when(configManager.getConsoleMessage("startup", ConsoleMessage.STARTUP.getFallback()))
-                .thenReturn("&aGreen start: {groups}");
-
-        consoleService.attach(configManager);
-        consoleService.log(ConsoleMessage.STARTUP, "groups", "2");
-
-        verify(logger).log(Level.INFO, "\u00A7aGreen start: 2");
-
-    }
-
-    @Test
-    @DisplayName("messages.console.enabled: false полностью глушит консоль")
-    void silencesConsoleWhenDisabled() {
-
-        ConfigManager configManager = mock(ConfigManager.class);
-        when(configManager.areConsoleMessagesEnabled()).thenReturn(false);
-
-        consoleService.attach(configManager);
+    @DisplayName("Уровень логирования берётся из типа сообщения")
+    void logsLevelFromMessageType() {
         consoleService.log(ConsoleMessage.ECONOMY_MISSING);
 
-        verifyNoInteractions(logger);
+        verify(logger).log(Level.SEVERE, ConsoleMessage.ECONOMY_MISSING.getText());
 
     }
+
+    @Test
+    @DisplayName("&-коды в текстах преобразуются как в чате")
+    void translatesColorCodes() {
+        consoleService.log(ConsoleMessage.GROUPS_EMPTY);
+
+        verify(logger).log(Level.WARNING, ConsoleMessage.GROUPS_EMPTY.getText());
+
+    }
+
+    @Test
+    @DisplayName("applyTokens подставляет пары и игнорирует непарный хвост")
+    void appliesTokenPairs() {
+        assertEquals("a=1, b=2", ConsoleService.applyTokens("a={a}, b={b}", "a", "1", "b", "2"));
+        assertEquals("a={a}", ConsoleService.applyTokens("a={a}", "solo"));
+    }
+
 }

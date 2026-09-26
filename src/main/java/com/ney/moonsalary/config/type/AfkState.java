@@ -13,4 +13,5 @@ public enum AfkState {
 
     /** Игрок в AFK, зарплата не выдаётся */
     AFK
+
 }
