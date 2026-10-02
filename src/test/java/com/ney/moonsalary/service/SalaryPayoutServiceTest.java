@@ -55,13 +55,16 @@ class SalaryPayoutServiceTest {
 
         CAPTURED.clear();
         server = MockBukkit.mock();
+
         Plugin vault = MockBukkit.loadWith(FakeVault.class, "vault-plugin.yml");
         economy = mock(Economy.class);
+
         when(economy.getName()).thenReturn("MockEconomy");
         when(economy.depositPlayer(any(Player.class), anyDouble()))
                 .thenAnswer(invocation -> new EconomyResponse(
                         invocation.getArgument(1, Double.class), 0D,
                         EconomyResponse.ResponseType.SUCCESS, null));
+
         server.getServicesManager().register(Economy.class, economy, vault, ServicePriority.Normal);
         plugin = MockBukkit.load(MoonSalary.class);
         server.getCommandMap().register("cap", new Command("cap") {
@@ -100,11 +103,11 @@ class SalaryPayoutServiceTest {
                 event.setCancelled(true);
             }
         }, plugin);
+
         PlayerMock player = server.addPlayer();
 
         assertFalse(plugin.getServices().getPayoutService()
                 .payout(player, group(List.of("paid"), List.of()), AfkState.ACTIVE));
-
         verify(economy, never()).depositPlayer(any(Player.class), anyDouble());
 
         assertNull(player.nextMessage());
@@ -119,7 +122,6 @@ class SalaryPayoutServiceTest {
 
         assertFalse(plugin.getServices().getPayoutService()
                 .payout(player, group(List.of("paid"), List.of()), AfkState.AFK));
-
         verify(economy, never()).depositPlayer(any(Player.class), anyDouble());
 
         assertNull(player.nextMessage());
@@ -135,17 +137,18 @@ class SalaryPayoutServiceTest {
                   on_salary:
                     blocked_afk: 'AFK!'
                 """);
+
         Files.writeString(plugin.getDataFolder().toPath().resolve("groups.yml"), """
                 groups:
                   default:
                     salary: 100
                 """);
+
         server.dispatchCommand(server.getConsoleSender(), "salary reload");
         PlayerMock player = server.addPlayer();
 
         assertFalse(plugin.getServices().getPayoutService()
                 .payout(player, group(List.of("paid"), List.of()), AfkState.AFK));
-
         assertEquals("AFK!", player.nextMessage());
 
         verify(economy, never()).depositPlayer(any(Player.class), anyDouble());
@@ -178,11 +181,13 @@ class SalaryPayoutServiceTest {
                 settings:
                   execute_commands: false
                 """);
+
         Files.writeString(plugin.getDataFolder().toPath().resolve("groups.yml"), """
                 groups:
                   default:
                     salary: 100
                 """);
+
         server.dispatchCommand(server.getConsoleSender(), "salary reload");
         PlayerMock player = server.addPlayer();
 
@@ -204,11 +209,11 @@ class SalaryPayoutServiceTest {
                 fired.add(event.getAmount());
             }
         }, plugin);
+
         PlayerMock player = server.addPlayer();
 
         assertFalse(plugin.getServices().getPayoutService()
                 .payout(player, group(List.of("paid"), List.of()), AfkState.AFK));
-
         assertTrue(fired.isEmpty());
 
         verify(economy, never()).depositPlayer(any(Player.class), anyDouble());
@@ -223,19 +228,21 @@ class SalaryPayoutServiceTest {
                 settings:
                   format_money: true
                 """);
+
         Files.writeString(plugin.getDataFolder().toPath().resolve("groups.yml"), """
                 groups:
                   default:
                     salary: 100
                 """);
+
         when(economy.format(100D)).thenReturn("$100.00");
         server.dispatchCommand(server.getConsoleSender(), "salary reload");
+
         PlayerMock player = server.addPlayer();
 
         assertTrue(plugin.getServices().getPayoutService()
                 .payout(player, group(List.of(), List.of("cap {money}|{money_formatted}")),
                         AfkState.ACTIVE));
-
         assertEquals(List.of("cap 100|$100.00"), CAPTURED);
 
     }
@@ -265,6 +272,7 @@ class SalaryPayoutServiceTest {
                 event.setCancelled(true);
             }
         }, plugin);
+
         plugin.getServices().getPayoutService().payout(player, group, AfkState.ACTIVE);
 
         assertEquals(PayoutOutcome.CANCELLED,

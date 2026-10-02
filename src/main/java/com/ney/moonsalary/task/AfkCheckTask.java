@@ -32,11 +32,9 @@ public class AfkCheckTask implements Runnable {
     public AfkCheckTask(@NotNull MoonSalaryConfig configManager,
                         @NotNull AfkTracker afkTracker,
                         @NotNull PayoutSchedule payoutSchedule) {
-
         this.configManager = configManager;
         this.afkTracker = afkTracker;
         this.payoutSchedule = payoutSchedule;
-
     }
 
     @Override

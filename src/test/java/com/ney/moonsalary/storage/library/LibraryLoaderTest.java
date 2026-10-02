@@ -24,12 +24,9 @@ class LibraryLoaderTest {
     @Test
     @DisplayName("Без файла и без скачивания драйвер не поднимается")
     void missingLibraryWithoutDownloadFails() {
-
         LibraryLoader loader = new LibraryLoader(libsFolder.toFile(), false);
-
         assertThrows(SQLException.class, () -> loader.loadDriver(
                 List.of(LibraryLoader.H2_DRIVER), "org.h2.Driver"));
-
     }
 
     @Test

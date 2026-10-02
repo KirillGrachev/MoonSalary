@@ -238,6 +238,7 @@ public class ConfigManager implements MoonSalaryConfig {
         giveSuccessMessage = color(config.getString(PATH_GIVE_SUCCESS, ""));
         giveFailedMessage = color(config.getString(PATH_GIVE_FAILED, ""));
         giveUnknownGroupMessage = color(config.getString(PATH_GIVE_UNKNOWN_GROUP, ""));
+
         groups = loadGroups();
         validateFallbackGroup();
 
@@ -386,6 +387,7 @@ public class ConfigManager implements MoonSalaryConfig {
     private @NotNull PayoutMode parsePayoutMode() {
 
         String configValue = config.getString(PATH_PAYOUT_MODE, "GLOBAL");
+
         try {
             return PayoutMode.valueOf(configValue.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException exception) {

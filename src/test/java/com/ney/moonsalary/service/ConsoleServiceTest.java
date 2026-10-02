@@ -24,6 +24,7 @@ class ConsoleServiceTest {
 
         logger = mock(Logger.class);
         MoonSalary plugin = mock(MoonSalary.class);
+
         when(plugin.getLogger()).thenReturn(logger);
         this.consoleService = new ConsoleService(plugin);
 
@@ -33,27 +34,21 @@ class ConsoleServiceTest {
     @DisplayName("Текст берётся из кода (enum), плейсхолдеры подставляются парами")
     void logsEnumTextWithTokens() {
         consoleService.log(ConsoleMessage.STARTUP, "groups", "8");
-
         verify(logger).log(Level.INFO, "MoonSalary is up and running! Groups: 8");
-
     }
 
     @Test
     @DisplayName("Уровень логирования берётся из типа сообщения")
     void logsLevelFromMessageType() {
         consoleService.log(ConsoleMessage.ECONOMY_MISSING);
-
         verify(logger).log(Level.SEVERE, ConsoleMessage.ECONOMY_MISSING.getText());
-
     }
 
     @Test
     @DisplayName("&-коды в текстах преобразуются как в чате")
     void translatesColorCodes() {
         consoleService.log(ConsoleMessage.GROUPS_EMPTY);
-
         verify(logger).log(Level.WARNING, ConsoleMessage.GROUPS_EMPTY.getText());
-
     }
 
     @Test

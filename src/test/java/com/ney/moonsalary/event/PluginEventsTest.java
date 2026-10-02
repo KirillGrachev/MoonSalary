@@ -76,6 +76,7 @@ class PluginEventsTest {
     void eventDispatcherRegistersListeners() {
 
         MoonSalary plugin = MockBukkit.load(MoonSalary.class);
+
         PlayerMock player = server.addPlayer();
         List<Boolean> received = new ArrayList<>();
         new EventDispatcher(plugin).registerEvents(new Listener() {
@@ -84,8 +85,8 @@ class PluginEventsTest {
                 received.add(event.isAfk());
             }
         });
-        server.getPluginManager().callEvent(new PlayerAfkEvent(player, true));
 
+        server.getPluginManager().callEvent(new PlayerAfkEvent(player, true));
         assertEquals(List.of(true), received);
 
     }

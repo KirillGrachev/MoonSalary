@@ -94,7 +94,6 @@ class MoonSalaryIntegrationTest {
         }
 
         server.getScheduler().performTicks(TICKS_PER_SECOND * 180);
-
         verify(economy, times(1)).depositPlayer(any(Player.class), anyDouble());
 
     }
@@ -108,13 +107,14 @@ class MoonSalaryIntegrationTest {
 
         Plugin vault = MockBukkit.loadWith(FakeVault.class, "vault-plugin.yml");
         Economy economy = mock(Economy.class);
+
         when(economy.getName()).thenReturn("MockEconomy");
         when(economy.depositPlayer(any(Player.class), anyDouble()))
                 .thenAnswer(invocation -> new EconomyResponse(
                         invocation.getArgument(1, Double.class), 0D,
                         EconomyResponse.ResponseType.SUCCESS, null));
-        server.getServicesManager().register(Economy.class, economy, vault, ServicePriority.Normal);
 
+        server.getServicesManager().register(Economy.class, economy, vault, ServicePriority.Normal);
         return economy;
 
     }
@@ -123,6 +123,7 @@ class MoonSalaryIntegrationTest {
 
         Location target = player.getLocation().clone();
         target.add(x, y, z);
+
         player.teleport(target);
 
     }

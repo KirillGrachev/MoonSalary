@@ -34,12 +34,10 @@ public class SalaryPayEvent extends Event implements Cancellable {
                           @NotNull SalaryGroup group,
                           double amount,
                           @NotNull AfkState afkState) {
-
         this.player = player;
         this.group = group;
         this.amount = amount;
         this.afkState = afkState;
-
     }
 
     public Player getPlayer() {

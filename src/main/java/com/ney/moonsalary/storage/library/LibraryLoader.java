@@ -77,6 +77,7 @@ public class LibraryLoader {
                                       @NotNull String driverClass) throws SQLException {
 
         URLClassLoader classLoader = classLoader(libraries);
+
         try {
 
             Class<?> driverType = Class.forName(driverClass, true, classLoader);
@@ -101,11 +102,9 @@ public class LibraryLoader {
         URL[] urls = new URL[libraries.size()];
 
         try {
-
             for (int i = 0; i < libraries.size(); i++) {
                 urls[i] = ensure(libraries.get(i)).toURI().toURL();
             }
-
         } catch (MalformedURLException exception) {
             throw new SQLException("Invalid library path", exception);
         }
@@ -134,10 +133,8 @@ public class LibraryLoader {
         }
 
         if (!downloadEnabled) {
-
             throw new SQLException("Library " + definition.fileName()
                     + " is missing in " + libsFolder + " and downloading is disabled");
-
         }
 
         download(definition, target);
@@ -170,11 +167,9 @@ public class LibraryLoader {
             try (InputStream stream = connection.getInputStream()) {
                 Files.copy(stream, part.toPath(), StandardCopyOption.REPLACE_EXISTING);
             } finally {
-
                 if (connection instanceof HttpURLConnection http) {
                     http.disconnect();
                 }
-
             }
 
             Files.move(part.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);

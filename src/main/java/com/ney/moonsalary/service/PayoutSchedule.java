@@ -50,13 +50,11 @@ public class PayoutSchedule {
                           @NotNull PayoutRepository repository,
                           @NotNull LongSupplier tickClock,
                           @NotNull LongSupplier wallClock) {
-
         this.configManager = configManager;
         this.repository = repository;
         this.tickClock = tickClock;
         this.wallClock = wallClock;
         this.globalAnchorTicks = tickClock.getAsLong();
-
     }
 
     /**

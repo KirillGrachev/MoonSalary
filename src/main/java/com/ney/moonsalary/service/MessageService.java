@@ -43,13 +43,11 @@ public class MessageService {
                           @NotNull ConsoleService consoleService,
                           @NotNull PayoutSchedule payoutSchedule,
                           @NotNull PayoutHistoryService historyService) {
-
         this.configManager = configManager;
         this.economyService = economyService;
         this.consoleService = consoleService;
         this.payoutSchedule = payoutSchedule;
         this.historyService = historyService;
-
     }
 
     /**
@@ -97,12 +95,10 @@ public class MessageService {
      * @param text   строка из конфигурации
      */
     public void sendLine(@NotNull CommandSender sender, @NotNull String text) {
-
         String formatted = formatLine(null, sender.getName(), text, null, 0D, "");
         if (!formatted.isEmpty()) {
             sender.sendMessage(formatted);
         }
-
     }
 
     /**
@@ -252,9 +248,12 @@ public class MessageService {
         }
 
         if (!invalidTimePatternWarningSent) {
+
             invalidTimePatternWarningSent = true;
+
             int start = text.indexOf("{servertime_");
             int end = text.indexOf('}', start);
+
             consoleService.log(ConsoleMessage.INVALID_TIME_PATTERN,
                     "token", text.substring(start, end != -1 ? end + 1 : text.length()));
 

@@ -15,7 +15,6 @@ class HexColorUtilTest {
     @DisplayName("HEX-код преобразуется в &x&R&R&G&G&B&B")
     void convertsHexCode() {
         String result = HexColorUtil.color("#42fffcText");
-
         assertEquals(SECTION + "x" + SECTION + "4" + SECTION + "2" + SECTION + "f"
                 + SECTION + "f" + SECTION + "f" + SECTION + "c" + "Text", result);
     }
@@ -107,7 +106,6 @@ class HexColorUtilTest {
     void replacesTokens() {
         String result = PlaceholderUtil.replaceTokens("{group}: {money} / {interval} ({status}) {next}",
                 "Ney", "250", "staff", 3700L, "online", 2, "1h", "never");
-
         assertEquals("staff: 250 / 3700 (online) 1h", result);
     }
 
@@ -116,7 +114,6 @@ class HexColorUtilTest {
     void replacesPlayerToken() {
         assertEquals("hi Ney", PlaceholderUtil.replaceTokens("hi {player}",
                 "Ney", "0", null, 0L, "", 0, "", "never"));
-
         assertEquals("last: 100", PlaceholderUtil.replaceTokens("last: {last_payout}",
                 "Ney", "0", null, 0L, "", 0, "", "100"));
     }

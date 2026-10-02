@@ -51,11 +51,9 @@ public class PayoutRepositoryFactory {
             return sqlRepository;
 
         } catch (SQLException | RuntimeException exception) {
-
             plugin.getLogger().severe("SQL storage is unavailable: " + exception.getMessage()
                     + ". Falling back to YAML (payouts.yml).");
             return yamlRepository;
-
         }
 
     }

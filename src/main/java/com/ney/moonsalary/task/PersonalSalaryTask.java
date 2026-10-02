@@ -43,7 +43,6 @@ public class PersonalSalaryTask implements Runnable {
                               @NotNull SalaryPayoutService payoutService,
                               @NotNull ConsoleService consoleService,
                               @NotNull TaskScheduler taskScheduler) {
-
         this.configManager = configManager;
         this.groupRegistry = groupRegistry;
         this.afkTracker = afkTracker;
@@ -52,7 +51,6 @@ public class PersonalSalaryTask implements Runnable {
         this.payoutService = payoutService;
         this.consoleService = consoleService;
         this.taskScheduler = taskScheduler;
-
     }
 
     @Override
@@ -64,7 +62,6 @@ public class PersonalSalaryTask implements Runnable {
 
                 long now = payoutSchedule.currentTicks();
                 for (Player player : Bukkit.getOnlinePlayers()) {
-
                     try {
                         processPlayer(player, now);
                     } catch (RuntimeException exception) {
@@ -72,7 +69,6 @@ public class PersonalSalaryTask implements Runnable {
                                 "player", player.getName(),
                                 "reason", String.valueOf(exception));
                     }
-
                 }
 
             }

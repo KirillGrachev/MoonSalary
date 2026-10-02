@@ -28,10 +28,14 @@ class PayoutRepositoryFactoryTest {
 
     @BeforeEach
     void setUp() {
+
         plugin = mock(MoonSalary.class);
+
         when(plugin.getDataFolder()).thenReturn(dataFolder.toFile());
         when(plugin.getLogger()).thenReturn(Logger.getAnonymousLogger());
+
         configManager = mock(ConfigManager.class);
+
     }
 
     @Test

@@ -35,13 +35,11 @@ public class SalaryPayoutService {
                                @NotNull MessageService messageService,
                                @NotNull ConsoleService consoleService,
                                @NotNull PayoutHistoryService historyService) {
-
         this.configManager = configManager;
         this.economyService = economyService;
         this.messageService = messageService;
         this.consoleService = consoleService;
         this.historyService = historyService;
-
     }
 
     /**
@@ -77,9 +75,12 @@ public class SalaryPayoutService {
         // AFK-блокировка проверяется до события: слушатели SalaryPayEvent
         // не должны видеть выплаты, которые гарантированно не состоятся
         if (afkState == AfkState.AFK) {
+
             historyService.record(player, group, amount, PayoutOutcome.BLOCKED_AFK, source);
             sendBlockedMessage(player, group, amount);
+
             return false;
+
         }
 
         SalaryPayEvent event = new SalaryPayEvent(player, group, amount, afkState);
@@ -129,11 +130,13 @@ public class SalaryPayoutService {
         }
 
         for (String command : group.getCommands()) {
+
             String prepared = command
                     .replace("{player}", player.getName())
                     .replace("{money_formatted}", messageService.formatMoney(amount))
                     .replace("{money}", PlaceholderUtil.formatMoney(amount))
                     .replace("{group}", group.getName());
+
             try {
                 Bukkit.dispatchCommand(Bukkit.getConsoleSender(), prepared);
             } catch (RuntimeException exception) {

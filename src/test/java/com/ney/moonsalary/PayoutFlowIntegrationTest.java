@@ -62,11 +62,13 @@ class PayoutFlowIntegrationTest {
 
         this.vault = MockBukkit.loadWith(FakeVault.class, "vault-plugin.yml");
         this.economy = mock(Economy.class);
+
         when(economy.getName()).thenReturn("MockEconomy");
         when(economy.depositPlayer(any(Player.class), anyDouble()))
                 .thenAnswer(invocation -> new EconomyResponse(
                         invocation.getArgument(1, Double.class), 0D,
                         EconomyResponse.ResponseType.SUCCESS, null));
+
         server.getServicesManager().register(Economy.class, economy, vault, ServicePriority.Normal);
 
     }
@@ -88,12 +90,14 @@ class PayoutFlowIntegrationTest {
                   on_salary:
                     blocked_afk: 'AFK!'
                 """);
+
         Files.writeString(plugin.getDataFolder().toPath().resolve("groups.yml"), """
                 groups:
                   default:
                     salary: 100
                     priority: 0
                 """);
+
         server.dispatchCommand(server.getConsoleSender(), "salary reload");
         return plugin;
 
@@ -103,6 +107,7 @@ class PayoutFlowIntegrationTest {
 
         PlayerMock player = server.addPlayer();
         player.addAttachment(plugin, "group.default", true);
+
         return player;
 
     }
@@ -126,10 +131,9 @@ class PayoutFlowIntegrationTest {
 
         MoonSalary plugin = loadWithPersonalConfig();
         groupedPlayer(plugin);
+
         server.getScheduler().performTicks(TPS * 5 + 1);
-
         verify(economy, times(1)).depositPlayer(any(Player.class), anyDouble());
-
         server.getScheduler().performTicks(TPS * 5);
 
         verify(economy, times(2)).depositPlayer(any(Player.class), anyDouble());
@@ -148,7 +152,6 @@ class PayoutFlowIntegrationTest {
         server.getScheduler().performTicks(TPS * 36 + 1);
 
         verify(economy, times(5)).depositPlayer(any(Player.class), anyDouble());
-
         assertEquals(2, drain(player).stream().filter(message -> message.equals("AFK!")).count());
 
     }
@@ -181,6 +184,7 @@ class PayoutFlowIntegrationTest {
 
         hookEconomy();
         MoonSalary plugin = MockBukkit.load(MoonSalary.class);
+
         PlayerMock admin = groupedPlayer(plugin);
         admin.setOp(true);
         admin.performCommand("salary");
@@ -294,12 +298,14 @@ class PayoutFlowIntegrationTest {
                       other:
                         - "Salary of {player}"
                 """);
+
         Files.writeString(plugin.getDataFolder().toPath().resolve("groups.yml"), """
                 groups:
                   default:
                     salary: 100
                     priority: 0
                 """);
+
         server.dispatchCommand(server.getConsoleSender(), "salary reload");
 
         PlayerMock target = groupedPlayer(plugin);
@@ -330,12 +336,14 @@ class PayoutFlowIntegrationTest {
                   on_salary:
                     blocked_afk: 'AFK!'
                 """);
+
         Files.writeString(plugin.getDataFolder().toPath().resolve("groups.yml"), """
                 groups:
                   default:
                     salary: 100
                     priority: 0
                 """);
+
         server.dispatchCommand(server.getConsoleSender(), "salary reload");
         PlayerMock player = groupedPlayer(plugin);
 
@@ -343,7 +351,6 @@ class PayoutFlowIntegrationTest {
         server.getScheduler().performTicks(TPS * 15);
 
         verify(economy, never()).depositPlayer(any(Player.class), anyDouble());
-
         assertTrue(drain(player).stream().noneMatch(message -> message.equals("AFK!")));
 
         // возвращаемся: окно докручивается и выплачивается
@@ -367,6 +374,7 @@ class PayoutFlowIntegrationTest {
                     mode: PERSONAL
                     interval: 5
                 """);
+
         Files.writeString(plugin.getDataFolder().toPath().resolve("groups.yml"), """
                 groups:
                   default:
@@ -375,11 +383,11 @@ class PayoutFlowIntegrationTest {
                     commands:
                       - 'boom'
                 """);
+
         server.dispatchCommand(server.getConsoleSender(), "salary reload");
         groupedPlayer(plugin);
 
         server.getScheduler().performTicks(TPS * 5 + 1);
-
         verify(economy, times(1)).depositPlayer(any(Player.class), anyDouble());
 
         // второе окно: если бы эстафета планировщика оборвалась, выплаты бы не было
@@ -396,11 +404,13 @@ class PayoutFlowIntegrationTest {
         hookEconomy();
         MoonSalary plugin = MockBukkit.load(MoonSalary.class);
         registerThrowingCommand();
+
         Files.writeString(plugin.getDataFolder().toPath().resolve("config.yml"), """
                 settings:
                   payout:
                     interval: 5
                 """);
+
         Files.writeString(plugin.getDataFolder().toPath().resolve("groups.yml"), """
                 groups:
                   default:
@@ -409,12 +419,12 @@ class PayoutFlowIntegrationTest {
                     commands:
                       - 'boom'
                 """);
+
         server.dispatchCommand(server.getConsoleSender(), "salary reload");
         groupedPlayer(plugin);
         groupedPlayer(plugin);
 
         server.getScheduler().performTicks(TPS * 5 + 1);
-
         verify(economy, times(2)).depositPlayer(any(Player.class), anyDouble());
 
     }
@@ -434,15 +444,16 @@ class PayoutFlowIntegrationTest {
                     salary: 250
                     priority: 1
                 """);
+
         server.dispatchCommand(server.getConsoleSender(), "salary reload");
+
         PlayerMock admin = groupedPlayer(plugin);
         admin.setOp(true);
-        PlayerMock target = groupedPlayer(plugin);
 
+        PlayerMock target = groupedPlayer(plugin);
         admin.performCommand("salary give " + target.getName() + " vip");
 
         verify(economy).depositPlayer(target, 250D);
-
         assertTrue(drain(admin).stream().anyMatch(message -> message.contains("Paid")));
 
         // ручная выплата - полноценная запись истории с источником MANUAL
@@ -461,27 +472,28 @@ class PayoutFlowIntegrationTest {
 
         hookEconomy();
         MoonSalary plugin = MockBukkit.load(MoonSalary.class);
+
         PlayerMock player = groupedPlayer(plugin);
         PlayerMock target = groupedPlayer(plugin);
         PlayerMock admin = groupedPlayer(plugin);
         admin.setOp(true);
 
         player.performCommand("salary give " + target.getName() + " default");
-
         assertTrue(drain(player).stream().anyMatch(message -> message.contains("permission")));
-
         admin.performCommand("salary give " + target.getName() + " nosuchgroup");
 
         assertTrue(drain(admin).stream().anyMatch(message -> message.contains("Unknown group")));
-
         verify(economy, never()).depositPlayer(any(Player.class), anyDouble());
 
     }
 
     private void teleportTo(PlayerMock player, double x, double y, double z) {
+
         Location target = player.getLocation().clone();
         target.add(x, y, z);
+
         player.teleport(target);
+
     }
 
     /**
@@ -489,16 +501,12 @@ class PayoutFlowIntegrationTest {
      * имитация чужего плагина со сломанным обработчиком.
      */
     private void registerThrowingCommand() {
-
         server.getCommandMap().register("boom", new Command("boom") {
-
             @Override
             public boolean execute(CommandSender sender, String label, String[] args) {
                 throw new IllegalStateException("boom");
             }
-
         });
-
     }
 
 }

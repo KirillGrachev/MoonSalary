@@ -43,6 +43,7 @@ class MessageServiceTest {
         when(configManager.getMessagePrefix()).thenReturn("P>");
         when(configManager.getSalaryIntervalSeconds()).thenReturn(60L);
         when(configManager.getStatusNoPayout()).thenReturn("never");
+
         this.messageService = new MessageService(configManager, mock(EconomyService.class),
                 consoleService, mock(PayoutSchedule.class), historyService);
 

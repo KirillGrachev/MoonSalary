@@ -53,7 +53,6 @@ public class SalaryCommand implements TabExecutor {
                          @NotNull TaskScheduler taskScheduler,
                          @NotNull ConsoleService consoleService,
                          @NotNull SalaryPayoutService payoutService) {
-
         this.configManager = configManager;
         this.groupRegistry = groupRegistry;
         this.afkTracker = afkTracker;
@@ -61,7 +60,6 @@ public class SalaryCommand implements TabExecutor {
         this.taskScheduler = taskScheduler;
         this.consoleService = consoleService;
         this.payoutService = payoutService;
-
     }
 
     @Override
@@ -83,6 +81,7 @@ public class SalaryCommand implements TabExecutor {
             case ARG_LIST -> sendList(sender);
             case ARG_GIVE -> give(sender, args);
             case ARG_INFO -> {
+
                 if (args.length > 1) {
 
                     // Отдельное право на чужое инфо; отказ - явное сообщение,
@@ -94,6 +93,7 @@ public class SalaryCommand implements TabExecutor {
                 } else {
                     sendInfo(sender, sender instanceof Player player ? player : null);
                 }
+
             }
 
             default -> sendMessage(sender, configManager.getUsageMessage());

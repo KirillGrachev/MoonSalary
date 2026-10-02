@@ -40,12 +40,10 @@ public class SqlPayoutRepository implements PayoutRepository {
                                @NotNull SqlSettings settings,
                                @NotNull StorageType storageType,
                                @NotNull Logger logger) {
-
         this.connectionFactory = connectionFactory;
         this.settings = settings;
         this.storageType = storageType;
         this.logger = logger;
-
     }
 
     @Override
@@ -122,7 +120,6 @@ public class SqlPayoutRepository implements PayoutRepository {
             statement.setString(1, playerId.toString());
 
             try (ResultSet result = statement.executeQuery()) {
-
                 while (result.next()) {
                     entries.add(new PayoutEntry(
                             playerId,
@@ -134,7 +131,6 @@ public class SqlPayoutRepository implements PayoutRepository {
                             PayoutSource.valueOf(result.getString("source"))
                     ));
                 }
-
             }
 
         } catch (SQLException exception) {

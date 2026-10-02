@@ -38,7 +38,6 @@ public class GlobalSalaryTask implements Runnable {
                             @NotNull PayoutSchedule payoutSchedule,
                             @NotNull SalaryPayoutService payoutService,
                             @NotNull ConsoleService consoleService) {
-
         this.configManager = configManager;
         this.groupRegistry = groupRegistry;
         this.afkTracker = afkTracker;
@@ -46,7 +45,6 @@ public class GlobalSalaryTask implements Runnable {
         this.payoutSchedule = payoutSchedule;
         this.payoutService = payoutService;
         this.consoleService = consoleService;
-
     }
 
     @Override

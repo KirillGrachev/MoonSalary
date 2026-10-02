@@ -18,13 +18,11 @@ public class SalaryGroup {
     private final List<String> commands;
 
     public SalaryGroup(@NotNull SalaryGroupSettings settings) {
-
         this.name = settings.name();
         this.salary = settings.salary();
         this.priority = settings.priority();
         this.messages = settings.messages();
         this.commands = settings.commands();
-
     }
 
     public String getName() {

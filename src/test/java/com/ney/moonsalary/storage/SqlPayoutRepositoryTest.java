@@ -54,6 +54,7 @@ class SqlPayoutRepositoryTest {
         SqlPayoutRepository created = new SqlPayoutRepository(
                 factory, settings, type, Logger.getAnonymousLogger());
         created.connect();
+
         return created;
 
     }
@@ -70,9 +71,7 @@ class SqlPayoutRepositoryTest {
         repository.saveNextPayout(playerId, 123_456L, "Ney");
 
         assertEquals(123_456L, repository.loadNextPayout(playerId));
-
         repository.saveNextPayout(playerId, 789_012L, "Ney");
-
         assertEquals(789_012L, repository.loadNextPayout(playerId));
 
     }
@@ -123,7 +122,6 @@ class SqlPayoutRepositoryTest {
     @DisplayName("type() возвращает формат хранилища")
     void reportsOwnType() throws Exception {
         repository = repository(StorageType.H2);
-
         assertEquals(StorageType.H2, repository.type());
     }
 

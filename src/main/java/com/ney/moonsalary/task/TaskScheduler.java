@@ -58,7 +58,6 @@ public class TaskScheduler {
                          @NotNull SalaryPayoutService payoutService,
                          @NotNull ConsoleService consoleService,
                          @NotNull TickClock tickClock) {
-
         this.plugin = plugin;
         this.configManager = configManager;
         this.groupRegistry = groupRegistry;
@@ -68,7 +67,6 @@ public class TaskScheduler {
         this.payoutService = payoutService;
         this.consoleService = consoleService;
         this.tickClock = tickClock;
-
     }
 
     /**

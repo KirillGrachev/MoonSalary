@@ -44,11 +44,8 @@ class LocaleSensitivityTest {
     @Test
     @DisplayName("Фильтр автодополнения не ломается турецкой локалью")
     void filterIsTurkishProof() {
-
         Locale.setDefault(TURKISH);
-
         assertEquals(List.of("info"), SalaryCommand.filter(List.of("info", "list"), "INFO"));
-
     }
 
     @Test
@@ -72,6 +69,7 @@ class LocaleSensitivityTest {
         ConfigManager configManager = mock(ConfigManager.class);
         when(configManager.getGroups()).thenReturn(List.of(
                 new SalaryGroupSettings("vip", 250D, 1, List.of(), List.of())));
+
         GroupRegistry registry = new GroupRegistry(configManager);
 
         assertNotNull(registry.getGroup("VIP"));
@@ -84,11 +82,9 @@ class LocaleSensitivityTest {
     void moneyFormattingIsLocaleProof() {
 
         Locale.setDefault(Locale.GERMANY);
-
         assertEquals("12.50", PlaceholderUtil.formatMoney(12.5D));
 
         Locale.setDefault(TURKISH);
-
         assertEquals("12.50", PlaceholderUtil.formatMoney(12.5D));
 
     }

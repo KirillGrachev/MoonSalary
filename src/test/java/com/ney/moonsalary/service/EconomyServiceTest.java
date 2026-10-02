@@ -43,10 +43,12 @@ class EconomyServiceTest {
         servicesManager = mock(ServicesManager.class);
         when(server.getPluginManager()).thenReturn(pluginManager);
         when(server.getServicesManager()).thenReturn(servicesManager);
+
         plugin = mock(MoonSalary.class);
         when(plugin.getServer()).thenReturn(server);
         when(plugin.getLogger()).thenReturn(Logger.getAnonymousLogger());
         consoleService = mock(ConsoleService.class);
+
         this.economyService = new EconomyService(plugin, consoleService);
 
     }
@@ -127,7 +129,6 @@ class EconomyServiceTest {
                 .thenReturn(new EconomyResponse(100D, 0D, EconomyResponse.ResponseType.FAILURE, "no money"));
 
         assertFalse(economyService.deposit(player, 100D));
-
         verify(consoleService).log(ConsoleMessage.DEPOSIT_FAILED,
                 "money", "100.0", "player", "Ney", "reason", "no money");
 
@@ -158,7 +159,6 @@ class EconomyServiceTest {
         Player player = mock(Player.class);
 
         assertFalse(economyService.deposit(player, 0D));
-
         verify(economy, never()).depositPlayer(any(Player.class), anyDouble());
 
     }
@@ -167,7 +167,6 @@ class EconomyServiceTest {
     @DisplayName("Выдача денег без экономики безопасна")
     void depositWithoutEconomyIsSafe() {
         Player player = mock(Player.class);
-
         assertFalse(economyService.deposit(player, 100D));
     }
 
@@ -217,7 +216,6 @@ class EconomyServiceTest {
         when(servicesManager.getRegistration(Economy.class)).thenReturn(registration);
 
         assertTrue(economyService.setup());
-
         verify(consoleService).log(ConsoleMessage.ECONOMY_HOOKED, "provider", "SecondEconomy");
 
         assertEquals("5€", economyService.format(5D));

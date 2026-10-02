@@ -77,8 +77,10 @@ class PayoutScheduleTest {
         configManager = mock(ConfigManager.class);
         when(configManager.getSalaryIntervalTicks()).thenReturn(INTERVAL_TICKS);
         when(configManager.getPayoutMode()).thenReturn(PayoutMode.PERSONAL);
+
         player = mock(Player.class);
         when(player.getUniqueId()).thenReturn(UUID.randomUUID());
+
         this.payoutSchedule = new PayoutSchedule(configManager, repository,
                 ticks::get, wall::get);
 
@@ -178,6 +180,7 @@ class PayoutScheduleTest {
         // рестарт: прошло 30 секунд реального времени, тики сервера обнулились
         wall.addAndGet(30_000L);
         ticks.set(500L);
+
         PayoutSchedule restarted = new PayoutSchedule(configManager, repository,
                 ticks::get, wall::get);
         restarted.track(player, 500L);
@@ -228,7 +231,6 @@ class PayoutScheduleTest {
         payoutSchedule.endAfkPause(player, NOW + 500);
 
         assertFalse(payoutSchedule.slideOverAfk(player, NOW + INTERVAL_TICKS));
-
         assertTrue(payoutSchedule.isDue(player, NOW + INTERVAL_TICKS));
 
     }

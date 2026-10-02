@@ -44,9 +44,7 @@ class YamlPayoutRepositoryTest {
         repository.saveNextPayout(playerId, 1_700_000_000_000L, "Ney");
 
         assertEquals(1_700_000_000_000L, repository.loadNextPayout(playerId));
-
         repository.saveNextPayout(playerId, 1_800_000_000_000L, "Ney");
-
         assertEquals(1_800_000_000_000L, repository.loadNextPayout(playerId));
 
     }
@@ -57,6 +55,7 @@ class YamlPayoutRepositoryTest {
 
         UUID first = UUID.randomUUID();
         UUID second = UUID.randomUUID();
+
         repository.saveNextPayout(first, 111L, "A");
         repository.saveNextPayout(second, 222L, "B");
 
@@ -89,11 +88,8 @@ class YamlPayoutRepositoryTest {
     @Test
     @DisplayName("Файл хранилища создаётся в папке плагина")
     void fileIsCreatedInPluginFolder() {
-
         repository.saveNextPayout(UUID.randomUUID(), 42L, "Ney");
-
         assertTrue(new File(dataFolder.toFile(), "payouts.yml").isFile());
-
     }
 
 }

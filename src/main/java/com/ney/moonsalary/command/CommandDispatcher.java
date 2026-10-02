@@ -88,10 +88,8 @@ public class CommandDispatcher {
      */
     private void syncCommands() {
         try {
-
             Method syncCommands = Bukkit.getServer().getClass().getMethod("syncCommands");
             syncCommands.invoke(Bukkit.getServer());
-
         } catch (ReflectiveOperationException | RuntimeException ignored) {
             // сервер без syncCommands: команда исчезнет после рестарта
         }
@@ -133,10 +131,8 @@ public class CommandDispatcher {
 
         // Paper отдаёт карту публичным геттером
         try {
-
             Method getKnownCommands = commandMap.getClass().getMethod("getKnownCommands");
             return (Map<String, Command>) getKnownCommands.invoke(commandMap);
-
         } catch (ReflectiveOperationException | RuntimeException ignored) {
             // spigot без геттера: читаем защищённое поле ниже
         }
@@ -146,6 +142,7 @@ public class CommandDispatcher {
 
             Field field = SimpleCommandMap.class.getDeclaredField("knownCommands");
             field.setAccessible(true);
+
             return (Map<String, Command>) field.get(commandMap);
 
         } catch (ReflectiveOperationException | RuntimeException exception) {
